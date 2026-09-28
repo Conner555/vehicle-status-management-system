@@ -1,0 +1,38 @@
+@VehicleStatusSystem_HostAddress = http://localhost:5129
+@userToken = YOUR_USER_TOKEN
+
+@adminToken = YOUR_ADMIN_TOKEN
+
+# ========================
+# Authentication
+# ========================
+
+Register
+Login
+
+# ========================
+# Vehicles
+# ========================
+
+GET Vehicles
+GET Vehicle
+POST Vehicle
+PUT Vehicle
+DELETE Vehicle
+
+# ========================
+# Vehicle Status
+# ========================
+
+GET Status
+POST Status
+
+# ========================
+# Error Tests
+# ========================
+
+400
+401
+403
+404
+409
