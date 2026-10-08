@@ -163,12 +163,19 @@ Current UI includes:
 3. **Add / Edit Vehicle Dialog** - reusable form dialog for POST and PUT
 4. **Delete Confirmation** - Element Plus confirmation flow before DELETE
 
-> To add screenshots to the README, place images under `docs/images/` and reference them here, for example:
->
-> ```markdown
-> ![Login Page](docs/images/login-page.png)
-> ![Vehicle Management](docs/images/vehicle-management.png)
-> ```
+## Frontend Preview
+
+### Login Page
+
+![Login Page](docs/images/login-page.png)
+
+### Vehicle Management
+
+![Vehicle Management](docs/images/vehicle-management.png)
+
+### Add / Edit Vehicle Dialog
+
+![Vehicle Dialog](docs/images/vehicle-dialog.png)
 
 ---
 
