@@ -1,8 +1,23 @@
 # Vehicle Status Management System
 
-A backend vehicle status management system built with **ASP.NET Core Web API** and **SQL Server**.
+A full-stack vehicle status management system built with **ASP.NET Core Web API**, **SQL Server**, and **Vue 3**.
 
-The project follows a layered architecture using **Controller - Service - Repository**, and implements vehicle management, historical status records, DTO validation, global exception handling, logging, JWT authentication, and role-based authorization.
+The project follows a layered **Controller - Service - Repository** backend architecture and a component-based Vue frontend. It includes vehicle CRUD operations, vehicle status history, JWT authentication, role-based authorization, validation, centralized exception handling, service-layer unit tests, and a browser-based management interface.
+
+---
+
+## Highlights
+
+- Full-stack architecture: **Vue 3 + ASP.NET Core Web API + SQL Server**
+- JWT-based login and protected API access
+- Role-based authorization for **User** and **Admin**
+- Vehicle CRUD with backend business-rule validation
+- Vehicle status history with one-to-many database relationships
+- Vue component separation with **Props / Emits**
+- Centralized Axios instance with JWT request interceptor
+- Vue Router with authentication navigation guard
+- Element Plus management UI
+- xUnit + Moq service-layer unit tests
 
 ---
 
@@ -10,49 +25,34 @@ The project follows a layered architecture using **Controller - Service - Reposi
 
 ### Vehicle Management
 
-- Create vehicle information
 - Query all vehicles
 - Query vehicle by ID
+- Create vehicle information
 - Update vehicle information
 - Delete vehicle information
 - Prevent duplicate plate numbers
 - Prevent deletion of vehicles with historical status records
+- Reload frontend data from the backend after successful write operations
 
 ### Vehicle Status Management
 
 - Add vehicle status records
 - Query vehicle status history
-- Record temperature, speed, battery level and timestamp
-- One-to-many relationship between vehicles and status records
-
-### Validation & Exception Handling
-
-- DTO validation with `DataAnnotations`
-- Global exception handling middleware
-- Standard HTTP status handling:
-
-| Status Code | Scenario |
-| --- | --- |
-| `200` | Request succeeded |
-| `201` | Resource created |
-| `204` | Resource deleted |
-| `400` | Invalid request parameters |
-| `401` | Authentication failed |
-| `403` | Insufficient permissions |
-| `404` | Resource not found |
-| `409` | Business rule conflict |
-| `500` | Internal server error |
+- Record temperature, speed, battery level, and timestamp
+- Maintain a one-to-many relationship between vehicles and status records
 
 ### Authentication & Authorization
 
 - User registration
 - User login
 - Password hashing
-- JWT authentication
+- JWT Bearer authentication
 - Role-based authorization
 - `User` and `Admin` roles
+- Protected frontend routes
+- Automatic JWT injection through an Axios request interceptor
 
-Example permission model:
+Permission model:
 
 | Operation | User | Admin |
 | --- | :---: | :---: |
@@ -62,9 +62,119 @@ Example permission model:
 | Update vehicle | ✗ | ✓ |
 | Delete vehicle | ✗ | ✓ |
 
+### Validation & Exception Handling
+
+- DTO validation with `DataAnnotations`
+- Service-layer business-rule validation
+- Global exception handling middleware
+- Frontend error handling based on HTTP status codes
+
+| Status Code | Scenario |
+| --- | --- |
+| `200` | Request succeeded |
+| `201` | Resource created |
+| `204` | Resource deleted |
+| `400` | Invalid request parameters |
+| `401` | Authentication failed / token invalid |
+| `403` | Authenticated but insufficient permissions |
+| `404` | Resource not found |
+| `409` | Business rule conflict |
+| `500` | Internal server error |
+
+---
+
+## Frontend
+
+The frontend is built with **Vue 3**, **Vite**, **Axios**, **Vue Router**, and **Element Plus**.
+
+### Login Page
+
+The login page:
+
+- Collects username and password
+- Calls `POST /api/auth/login`
+- Stores the returned JWT, username, and role in `localStorage`
+- Redirects authenticated users to the vehicle management page
+- Displays validation and login error messages
+
+### Vehicle Management Page
+
+The vehicle page provides:
+
+- Vehicle table display
+- Add vehicle dialog
+- Edit vehicle dialog
+- Delete confirmation dialog
+- Loading state
+- Empty-state display
+- User / Admin role badge
+- Logout
+- Admin-only Create / Edit / Delete controls
+
+### Frontend Routing
+
+Current routes:
+
+```text
+/login
+/vehicles
+```
+
+The Vue Router navigation guard redirects unauthenticated users to `/login`.
+
+### Component Structure
+
+```text
+src/
+├── components/
+│   ├── LoginForm.vue
+│   ├── VehicleTable.vue
+│   └── VehicleDialog.vue
+│
+├── views/
+│   ├── LoginView.vue
+│   └── VehicleView.vue
+│
+├── router/
+│   └── index.js
+│
+├── services/
+│   └── api.js
+│
+├── App.vue
+└── main.js
+```
+
+The frontend uses:
+
+- **Props** to pass state from parent components to child components
+- **Emits** to send user actions back to parent components
+- Component `v-model` for reusable form bindings
+- An Axios instance for centralized backend configuration
+- Request interceptors to attach JWT Bearer tokens automatically
+- Response interception for common authentication cleanup
+
+### Frontend Preview
+
+Current UI includes:
+
+1. **Login Page** - centered Element Plus login card
+2. **Vehicle Management Page** - sidebar, header, current user/role, vehicle table, and admin actions
+3. **Add / Edit Vehicle Dialog** - reusable form dialog for POST and PUT
+4. **Delete Confirmation** - Element Plus confirmation flow before DELETE
+
+> To add screenshots to the README, place images under `docs/images/` and reference them here, for example:
+>
+> ```markdown
+> ![Login Page](docs/images/login-page.png)
+> ![Vehicle Management](docs/images/vehicle-management.png)
+> ```
+
 ---
 
 ## Tech Stack
+
+### Backend
 
 - **C#**
 - **ASP.NET Core Web API**
@@ -76,13 +186,58 @@ Example permission model:
 - **Dependency Injection**
 - **RESTful API**
 - **OpenAPI**
+
+### Frontend
+
+- **Vue 3**
+- **Vite**
+- **Axios**
+- **Vue Router**
+- **Element Plus**
+- **localStorage**
+- **JWT Bearer Token**
+
+### Testing & Development
+
+- **xUnit**
+- **Moq**
 - **Git / GitHub**
+- **Ubuntu / Linux**
+- **VS Code**
 
 ---
 
 ## Architecture
 
-The project uses a layered architecture:
+### Overall Architecture
+
+```text
+Browser
+   |
+   v
+Vue 3 Frontend
+   |
+   | Axios / JWT Bearer Token
+   v
+ASP.NET Core Web API
+   |
+   v
+Authentication / Authorization
+   |
+   v
+Controller
+   |
+   v
+Service
+   |
+   v
+Repository
+   |
+   v
+SQL Server
+```
+
+### Backend Request Pipeline
 
 ```text
 HTTP Request
@@ -109,7 +264,7 @@ Repository
 SQL Server
 ```
 
-Responsibilities of each layer:
+Responsibilities:
 
 - **Controller**
   - Receives HTTP requests
@@ -118,74 +273,64 @@ Responsibilities of each layer:
 
 - **Service**
   - Handles business logic
-  - Performs business rule validation
+  - Enforces business rules
   - Converts between DTOs and Models
 
 - **Repository**
   - Handles database access
-  - Executes SQL commands through ADO.NET
+  - Executes SQL through ADO.NET
 
 - **Middleware**
   - Handles global exceptions
-  - Provides unified error responses
+  - Produces unified error responses
+
+- **Vue Frontend**
+  - Displays data and forms
+  - Sends REST API requests
+  - Manages frontend route state
+  - Adds JWT tokens through Axios interceptors
 
 ---
 
 ## Project Structure
 
 ```text
-VehicleStatusSystem/
+vehicle-status-management-system/
 │
-├── Controllers/
-│   ├── AuthController.cs
-│   ├── VehiclesController.cs
-│   └── VehicleStatusController.cs
+├── src/
+│   └── VehicleStatusSystem/
+│       ├── Controllers/
+│       ├── DTOs/
+│       ├── Exceptions/
+│       ├── Interfaces/
+│       ├── Models/
+│       ├── Repositories/
+│       ├── Services/
+│       ├── Program.cs
+│       ├── appsettings.json
+│       └── VehicleStatusSystem.csproj
 │
-├── DTOs/
-│   ├── AuthResponseDto.cs
-│   ├── CreateVehicleDto.cs
-│   ├── CreateVehicleStatusDto.cs
-│   ├── LoginDto.cs
-│   ├── RegisterDto.cs
-│   ├── UpdateVehicleDto.cs
-│   ├── VehicleDto.cs
-│   └── VehicleStatusDto.cs
+├── tests/
+│   └── VehicleStatusSystem.Tests/
+│       └── Services/
+│           └── VehicleServiceTests.cs
 │
-├── Exceptions/
-│   ├── BusinessRuleException.cs
-│   ├── GlobalExceptionMiddleware.cs
-│   ├── InvalidCredentialsException.cs
-│   └── ResourceNotFoundException.cs
+├── frontend/
+│   └── vehicle-status-frontend/
+│       ├── src/
+│       │   ├── components/
+│       │   ├── views/
+│       │   ├── router/
+│       │   ├── services/
+│       │   ├── App.vue
+│       │   └── main.js
+│       ├── package.json
+│       └── vite.config.js
 │
-├── Interfaces/
-│   ├── IAuthService.cs
-│   ├── ITokenService.cs
-│   ├── IUserRepository.cs
-│   ├── IVehicleRepository.cs
-│   ├── IVehicleService.cs
-│   ├── IVehicleStatusRepository.cs
-│   └── IVehicleStatusService.cs
-│
-├── Models/
-│   ├── User.cs
-│   ├── Vehicle.cs
-│   └── VehicleStatusRecord.cs
-│
-├── Repositories/
-│   ├── UserRepository.cs
-│   ├── VehicleRepository.cs
-│   └── VehicleStatusRepository.cs
-│
-├── Services/
-│   ├── AuthService.cs
-│   ├── JwtTokenService.cs
-│   ├── VehicleService.cs
-│   └── VehicleStatusService.cs
-│
-├── Program.cs
-├── appsettings.json
-├── VehicleStatusSystem.csproj
-└── README.md
+├── database/
+├── .gitignore
+├── README.md
+└── VehicleStatusSystem.slnx
 ```
 
 ---
@@ -207,8 +352,6 @@ VehicleStatusRecords
 
 ### Vehicles
 
-Stores basic vehicle information.
-
 Main fields:
 
 ```text
@@ -223,8 +366,6 @@ CreateTime
 
 ### VehicleStatusRecords
 
-Stores historical operating status for vehicles.
-
 Main fields:
 
 ```text
@@ -236,15 +377,9 @@ Battery
 RecordTime
 ```
 
-`VehicleId` is a foreign key referencing:
-
-```text
-Vehicles.Id
-```
+`VehicleId` is a foreign key referencing `Vehicles.Id`.
 
 ### Users
-
-Stores authentication information.
 
 Main fields:
 
@@ -256,7 +391,7 @@ Role
 CreatedAt
 ```
 
-Passwords are not stored as plain text.
+Passwords are stored as hashes rather than plain text.
 
 ---
 
@@ -286,7 +421,7 @@ GET  /api/vehicles/{vehicleId}/status
 POST /api/vehicles/{vehicleId}/status
 ```
 
-Protected endpoints require a JWT:
+Protected endpoints use:
 
 ```http
 Authorization: Bearer <token>
@@ -294,47 +429,74 @@ Authorization: Bearer <token>
 
 ---
 
-## Example Authentication Flow
+## Authentication Flow
 
 ```text
-Register / Login
-        |
-        v
+Login Page
+    |
+    v
+POST /api/auth/login
+    |
+    v
 AuthController
-        |
-        v
+    |
+    v
 AuthService
-   /          \
-  v            v
-UserRepository PasswordHasher
-        |
-        v
+    |
+    +---- UserRepository
+    |
+    +---- PasswordHasher
+    |
+    v
 JwtTokenService
-        |
-        v
+    |
+    v
 JWT Token
+    |
+    v
+localStorage
+    |
+    v
+Axios Request Interceptor
+    |
+    v
+Authorization: Bearer <token>
 ```
 
-After login, the client sends the token with subsequent requests:
-
-```http
-Authorization: Bearer <JWT_TOKEN>
-```
-
-The server validates:
+The backend validates:
 
 - Token signature
 - Issuer
 - Audience
-- Expiration time
+- Expiration
 - User claims
 - Role claims
 
 ---
 
+## Testing
+
+The project includes service-layer unit tests using **xUnit** and **Moq**.
+
+Current tests focus on core `VehicleService` business behavior such as:
+
+- Vehicle existence checks
+- Delete behavior
+- Preventing deletion when historical records exist
+- Duplicate plate-number validation
+- Update failure / conflict scenarios
+
+Run the tests:
+
+```bash
+dotnet test
+```
+
+---
+
 ## Logging
 
-The system uses ASP.NET Core `ILogger`.
+The backend uses ASP.NET Core `ILogger`.
 
 Examples:
 
@@ -360,14 +522,16 @@ Global exception handling prevents internal exception details from being exposed
 
 ## Configuration
 
-Sensitive information is not stored directly in `appsettings.json`.
+Sensitive values should not be committed to Git.
 
-The project uses **.NET User Secrets** for development secrets such as:
+Development secrets such as:
 
 ```text
 ConnectionStrings:DefaultConnection
 Jwt:SecretKey
 ```
+
+can be stored with **.NET User Secrets**.
 
 Example:
 
@@ -383,74 +547,69 @@ dotnet user-secrets set \
 "<YOUR_JWT_SECRET>"
 ```
 
-Do not commit real database passwords, JWT secret keys, or valid JWT tokens to Git.
-
----
-
-## OpenAPI
-
-The project exposes an OpenAPI document in Development mode.
-
-After running the application:
-
-```text
-http://localhost:<port>/openapi/v1.json
-```
-
-Swagger UI is not currently included.
+Do not commit database passwords, JWT secret keys, or valid JWT tokens.
 
 ---
 
 ## How to Run
 
-### 1. Clone the repository
+### 1. Clone
 
 ```bash
-git clone <repository-url>
-cd VehicleStatusSystem
+git clone https://github.com/Conner555/vehicle-status-management-system.git
+cd vehicle-status-management-system
 ```
 
-### 2. Restore packages
+### 2. Configure and run the backend
 
 ```bash
+cd src/VehicleStatusSystem
 dotnet restore
-```
-
-### 3. Configure SQL Server
-
-Create the database:
-
-```text
-VehicleStatusDb
-```
-
-and configure the database connection string through User Secrets.
-
-### 4. Configure JWT Secret
-
-```bash
-dotnet user-secrets set \
-"Jwt:SecretKey" \
-"<YOUR_JWT_SECRET>"
-```
-
-### 5. Build
-
-```bash
 dotnet build
-```
-
-### 6. Run
-
-```bash
 dotnet run
 ```
 
-The terminal will display the local API address, for example:
+Configure SQL Server and the JWT secret before starting the backend.
+
+The development API currently uses a local address such as:
 
 ```text
 http://localhost:5129
 ```
+
+### 3. Run backend tests
+
+From the repository root:
+
+```bash
+dotnet test
+```
+
+### 4. Install and run the frontend
+
+Open another terminal:
+
+```bash
+cd frontend/vehicle-status-frontend
+npm install
+npm run dev
+```
+
+The Vite development server normally runs at:
+
+```text
+http://localhost:5173
+```
+
+### 5. Frontend-to-backend communication
+
+The Axios instance is configured in:
+
+```text
+frontend/vehicle-status-frontend/src/services/api.js
+```
+
+For local development, make sure the backend CORS policy allows the frontend origin.
 
 ---
 
@@ -461,7 +620,7 @@ Implemented:
 - [x] Vehicle CRUD
 - [x] Vehicle status history
 - [x] SQL Server persistence
-- [x] Repository pattern
+- [x] Repository / Service architecture
 - [x] Dependency Injection
 - [x] Async database operations
 - [x] DTO validation
@@ -470,16 +629,23 @@ Implemented:
 - [x] User Secrets
 - [x] Password hashing
 - [x] JWT authentication
-- [x] Role-based authorization
-- [x] OpenAPI document
+- [x] User / Admin role authorization
+- [x] xUnit + Moq service-layer unit tests
+- [x] Vue 3 frontend
+- [x] Element Plus management UI
+- [x] Frontend GET / POST / PUT / DELETE integration
+- [x] Vue component separation with Props / Emits
+- [x] Axios instance + JWT interceptor
+- [x] Vue Router
+- [x] Authentication navigation guard
 
 Planned improvements:
 
-- [ ] Unit tests
 - [ ] Integration tests
 - [ ] Docker
 - [ ] CI/CD with GitHub Actions
-- [ ] Improved API documentation
+- [ ] Pagination / search / filtering
+- [ ] Expanded business modules such as rental orders and reviews
 
 ---
 
@@ -491,8 +657,15 @@ This project was developed to practice and understand:
 - RESTful API design
 - SQL Server integration
 - ADO.NET asynchronous programming
+- Controller / Service / Repository separation
 - Dependency Injection
-- Repository and Service patterns
+- DTO validation
 - Authentication and authorization
-- Error handling and logging
-- Secure configuration management
+- Global exception handling and logging
+- Unit testing with xUnit and Moq
+- Vue 3 component-based frontend development
+- Props / Emits and component `v-model`
+- Axios instances and interceptors
+- Vue Router and navigation guards
+- Frontend-backend integration
+- Git / GitHub project management
