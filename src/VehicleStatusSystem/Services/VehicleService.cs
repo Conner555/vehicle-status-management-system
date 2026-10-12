@@ -22,10 +22,10 @@ public class VehicleService : IVehicleService
         _logger = logger;
     }
 
-    public async Task<List<VehicleDto>> GetAllAsync()
+    public async Task<List<VehicleDto>> GetAllAsync(string? keyword = null)
     {
         List<Vehicle> vehicles =
-            await _vehicleRepository.GetAllAsync();
+            await _vehicleRepository.GetAllAsync(keyword);
 
         return vehicles
             .Select(ToDto)

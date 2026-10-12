@@ -49,6 +49,8 @@ const currentRole = ref(
 
 const vehicles = ref([])
 
+const searchKeyword = ref('')
+
 const plateNumber = ref('')
 const model = ref('')
 const status = ref('')
@@ -89,7 +91,11 @@ async function loadVehicles() {
   try {
 
     const response =
-      await api.get('/vehicles')
+      await api.get('/vehicles', {
+        params: {
+          keyword : searchKeyword.value.trim()
+        }
+      })
 
     vehicles.value =
       response.data
@@ -127,6 +133,21 @@ async function loadVehicles() {
     loading.value = false
   }
 }
+
+// ======================================================
+// SearchKeywowrd
+// ======================================================
+
+
+async function searchVehicles() {
+  await loadVehicles()
+}
+
+async function resetSearch() {
+  searchKeyword.value = ''
+  await loadVehicles()
+}
+
 
 
 // ======================================================
@@ -614,6 +635,36 @@ onMounted(() => {
           >
             Add Vehicle
           </el-button>
+
+
+        <!-- ============================================= -->
+        <!-- Search Keyword -->
+        <!-- ============================================= -->
+
+        
+        <div class="search-area">
+
+          <el-input
+            v-model="searchKeyword"
+            placeholder="Search plate number or model"
+            clearable
+            style="width: 260px"
+            @keyup.enter="searchVehicles"
+          />
+
+          <el-button
+            type="primary"
+            @click="searchVehicles"
+          >
+            Search
+          </el-button>
+
+          <el-button @click="resetSearch">
+            Reset
+          </el-button>
+
+        </div>
+
 
         </div>
 

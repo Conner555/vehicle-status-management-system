@@ -16,7 +16,9 @@ public class VehicleRepository : IVehicleRepository
                 "Database connection string was not found.");
     }
 
-    public async Task<List<Vehicle>> GetAllAsync()
+
+    public async Task<List<Vehicle>> GetAllAsync(
+        string? keyword = null)
     {
         List<Vehicle> vehicles = new();
 
@@ -28,6 +30,11 @@ public class VehicleRepository : IVehicleRepository
                 Status,
                 CreateTime
             FROM dbo.Vehicles
+            WHERE (
+                @Keyword IS NULL
+                OR PlateNumber LIKE @Pattern
+                OR Model LIKE @Pattern
+            )
             ORDER BY Id;
             """;
 
@@ -39,6 +46,32 @@ public class VehicleRepository : IVehicleRepository
         await using SqlCommand command =
             new(sql, connection);
 
+        string? normalizedKeyword =
+            string.IsNullOrWhiteSpace(keyword)
+                ? null
+                : keyword.Trim();
+
+        command.Parameters.Add(
+            "@Keyword",
+            System.Data.SqlDbType.NVarChar,
+            100
+        ).Value = (object?)normalizedKeyword
+                ?? DBNull.Value;
+
+        // 对用户输入中的 SQL LIKE 特殊字符转义
+        string? escapedKeyword = normalizedKeyword?
+            .Replace("[", "[[]")
+            .Replace("%", "[%]")
+            .Replace("_", "[_]");
+
+        command.Parameters.Add(
+            "@Pattern",
+            System.Data.SqlDbType.NVarChar,
+            202
+        ).Value = escapedKeyword is null
+            ? DBNull.Value
+            : $"%{escapedKeyword}%";
+
         await using SqlDataReader reader =
             await command.ExecuteReaderAsync();
 
@@ -49,6 +82,7 @@ public class VehicleRepository : IVehicleRepository
 
         return vehicles;
     }
+
 
     public async Task<Vehicle?> GetByIdAsync(int id)
     {

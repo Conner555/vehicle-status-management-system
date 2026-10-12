@@ -3,6 +3,8 @@
 
 @adminToken = YOUR_ADMIN_TOKEN
 
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoidXNlcjAxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiVXNlciIsImV4cCI6MTc5MTY4ODY2MSwiaXNzIjoiVmVoaWNsZVN0YXR1c1N5c3RlbSIsImF1ZCI6IlZlaGljbGVTdGF0dXNDbGllbnQifQ.BIUVSCNqL_s0Q5SLgpNnL0wLlaTpb-BO-ypyjI7sHMU
+
 # ========================
 # Authentication
 # ========================
@@ -36,3 +38,20 @@ POST Status
 403
 404
 409
+
+
+
+###
+GET http://localhost:5129/api/vehicles?keyword=Tesla
+Authorization: Bearer {{token}}
+
+
+
+###
+POST http://localhost:5129/api/auth/login
+Content-Type: application/json
+
+{
+    "username": "user01",
+    "password": "12345678"
+}

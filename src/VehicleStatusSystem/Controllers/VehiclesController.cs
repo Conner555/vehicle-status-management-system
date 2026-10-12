@@ -20,11 +20,11 @@ public class VehiclesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<VehicleDto>>>
-        GetAll()
+    public async Task<ActionResult<List<VehicleDto>>> GetAll(
+        [FromQuery] string? keyword = null)
     {
         List<VehicleDto> vehicles =
-            await _vehicleService.GetAllAsync();
+            await _vehicleService.GetAllAsync(keyword);
 
         return Ok(vehicles);
     }

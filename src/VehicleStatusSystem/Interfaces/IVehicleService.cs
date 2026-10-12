@@ -4,7 +4,7 @@ namespace VehicleStatusSystem.Interfaces;
 
 public interface IVehicleService
 {
-    Task<List<VehicleDto>> GetAllAsync();
+    Task<List<VehicleDto>> GetAllAsync(string? keyword = null);
 
     Task<VehicleDto?> GetByIdAsync(int id);
 
