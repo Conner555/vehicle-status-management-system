@@ -18,7 +18,8 @@ public class VehicleRepository : IVehicleRepository
 
 
     public async Task<List<Vehicle>> GetAllAsync(
-        string? keyword = null)
+        string? keyword = null,
+        string? status = null )
     {
         List<Vehicle> vehicles = new();
 
@@ -34,6 +35,11 @@ public class VehicleRepository : IVehicleRepository
                 @Keyword IS NULL
                 OR PlateNumber LIKE @Pattern
                 OR Model LIKE @Pattern
+            )
+            AND
+            (
+                @Status IS NULL
+                OR Status = @Status
             )
             ORDER BY Id;
             """;
@@ -51,6 +57,11 @@ public class VehicleRepository : IVehicleRepository
                 ? null
                 : keyword.Trim();
 
+        string? normalizedStatus =
+            string.IsNullOrWhiteSpace(status)
+                ? null
+                : status.Trim();
+
         command.Parameters.Add(
             "@Keyword",
             System.Data.SqlDbType.NVarChar,
@@ -58,6 +69,14 @@ public class VehicleRepository : IVehicleRepository
         ).Value = (object?)normalizedKeyword
                 ?? DBNull.Value;
 
+        command.Parameters.Add(
+            "@Status",
+            System.Data.SqlDbType.NVarChar,
+            20
+        ).Value = (object?)normalizedStatus
+                    ?? DBNull.Value;
+
+    
         // 对用户输入中的 SQL LIKE 特殊字符转义
         string? escapedKeyword = normalizedKeyword?
             .Replace("[", "[[]")
