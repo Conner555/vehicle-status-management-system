@@ -9,6 +9,8 @@ import LoginView
 import VehicleView
   from '../views/VehicleView.vue'
 
+import VehicleDetailView
+  from '../views/VehicleDetailView.vue'
 
 const routes = [
 
@@ -29,6 +31,16 @@ const routes = [
     meta: {
       requiresAuth: true
     }
+  },
+
+  {
+    path: '/vehicles/:id',
+    name: 'VehicleDetail',
+    component:  VehicleDetailView,
+    
+    meta:{
+      requiresAuth :true
+    }
   }
 
 ]
@@ -47,38 +59,25 @@ const router = createRouter({
 // Navigation Guard
 // ======================================================
 
-router.beforeEach(
-  (to, from, next) => {
 
-    const token =
-      localStorage.getItem('token')
+router.beforeEach((to) => {
 
+  const token = localStorage.getItem('token')
 
-    if (
-      to.meta.requiresAuth &&
-      !token
-    ) {
-
-      next('/login')
-
-      return
-    }
-
-
-    if (
-      to.path === '/login' &&
-      token
-    ) {
-
-      next('/vehicles')
-
-      return
-    }
-
-
-    next()
+  // 未登录，跳转登录页面
+  if (to.meta.requiresAuth && !token) {
+    return '/login'
   }
-)
+
+  // 已登录，不需要重复进入登录页面
+  if (to.path === '/login' && token) {
+    return '/vehicles'
+  }
+
+  // 允许正常跳转
+  return true
+})
+
 
 
 export default router
