@@ -3,8 +3,7 @@
 
 @adminToken = YOUR_ADMIN_TOKEN
 
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoidXNlcjAxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiVXNlciIsImV4cCI6MTc5MTc5MjYwMCwiaXNzIjoiVmVoaWNsZVN0YXR1c1N5c3RlbSIsImF1ZCI6IlZlaGljbGVTdGF0dXNDbGllbnQifQ.qd-MjDDVlhi4-0IUKQSFlstjnZa2dyu6Z3MkPdOOlPA
-
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoidXNlcjAxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiVXNlciIsImV4cCI6MTc5MTgxNjg3MCwiaXNzIjoiVmVoaWNsZVN0YXR1c1N5c3RlbSIsImF1ZCI6IlZlaGljbGVTdGF0dXNDbGllbnQifQ.-R7ImPYLN2EDKRC_B7lMCVm7PI3_kkhqXgbHNUkubDk
 # ========================
 # Authentication
 # ========================
@@ -60,4 +59,13 @@ Content-Type: application/json
 GET http://localhost:5129/api/vehicles?keyword=BYD&status=Active
 Authorization: Bearer {{token}}
 
+
+###
+GET http://localhost:5129/api/vehicles/paged?page=1&pageSize=2
+Authorization: Bearer {{token}}
+
+
+### 测试2：第二页
+GET http://localhost:5129/api/vehicles/paged?page=2&pageSize=2
+Authorization: Bearer {{token}}
 

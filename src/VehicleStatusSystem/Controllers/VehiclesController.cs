@@ -33,6 +33,23 @@ public class VehiclesController : ControllerBase
         return Ok(vehicles);
     }
 
+
+    [HttpGet("paged")]
+    public async Task<ActionResult<PagedResultDto<VehicleDto>>>
+        GetPaged([FromQuery] VehiclePageQueryDto query)
+    {
+        PagedResultDto<VehicleDto> result =
+            await _vehicleService.GetPagedAsync(
+                query.Keyword,
+                query.Status,
+                query.Page,
+                query.PageSize
+            );
+
+        return Ok(result);
+    }
+
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<VehicleDto>>
         GetById(int id)

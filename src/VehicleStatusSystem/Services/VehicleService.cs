@@ -35,6 +35,71 @@ public class VehicleService : IVehicleService
             .ToList();
     }
 
+
+    public async Task<PagedResultDto<VehicleDto>> GetPagedAsync(
+        string? keyword,
+        string? status,
+        int page,
+        int pageSize)
+    {
+        // 1. 校验分页参数
+        if (page < 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(page),
+                "Page must be greater than or equal to 1."
+            );
+        }
+
+        if (pageSize < 1 || pageSize > 100)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(pageSize),
+                "PageSize must be between 1 and 100."
+            );
+        }
+
+        // 2. 检查 OFFSET 是否超出 int 范围
+        if (((long)page - 1) * pageSize > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(page),
+                "Page offset is too large."
+            );
+        }
+
+        // 3. 调用 Repository
+        var (vehicles, totalCount) =
+            await _vehicleRepository.GetPagedAsync(
+                keyword,
+                status,
+                page,
+                pageSize
+            );
+
+        // 4. 转换为 VehicleDto
+        List<VehicleDto> items = vehicles
+            .Select(ToDto)
+            .ToList();
+
+        // 5. 计算总页数
+        int totalPages =
+            (int)Math.Ceiling(
+                (double)totalCount / pageSize
+            );
+
+        // 6. 返回分页结果
+        return new PagedResultDto<VehicleDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = totalPages
+        };
+    }
+
+
     public async Task<VehicleDto?> GetByIdAsync(int id)
     {
         Vehicle? vehicle =
