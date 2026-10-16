@@ -50,6 +50,14 @@ builder.Services.AddScoped<
     ITokenService,
     JwtTokenService>();
 
+builder.Services.AddScoped<
+    IDashboardRepository,
+    DashboardRepository>();
+
+builder.Services.AddScoped<
+    IDashboardService,
+    DashboardService>();
+
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

@@ -12,6 +12,10 @@ import VehicleView
 import VehicleDetailView
   from '../views/VehicleDetailView.vue'
 
+import DashboardView 
+  from '../views/DashboardView.vue'
+
+
 const routes = [
 
   {
@@ -28,6 +32,15 @@ const routes = [
     path: '/vehicles',
     component: VehicleView,
 
+    meta: {
+      requiresAuth: true
+    }
+  },
+
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: DashboardView,
     meta: {
       requiresAuth: true
     }

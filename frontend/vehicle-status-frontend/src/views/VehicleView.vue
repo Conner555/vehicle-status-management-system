@@ -525,7 +525,8 @@ onMounted(() => {
 
 
       <el-menu
-        default-active="vehicles"
+        router
+        :default-active="$route.path"
         class="side-menu"
       >
 
