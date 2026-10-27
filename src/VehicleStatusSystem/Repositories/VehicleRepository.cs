@@ -1,6 +1,7 @@
 using Microsoft.Data.SqlClient;
 using VehicleStatusSystem.Interfaces;
 using VehicleStatusSystem.Models;
+using VehicleStatusSystem.Exceptions;
 
 namespace VehicleStatusSystem.Repositories;
 
@@ -307,6 +308,7 @@ public class VehicleRepository : IVehicleRepository
             (
                 PlateNumber,
                 Model,
+                VehicleModelId,
                 Status
             )
             OUTPUT
@@ -315,12 +317,15 @@ public class VehicleRepository : IVehicleRepository
                 INSERTED.Model,
                 INSERTED.Status,
                 INSERTED.CreateTime
-            VALUES
-            (
+            SELECT
                 @PlateNumber,
-                @Model,
+                vm.ModelName,
+                vm.Id,
                 @Status
-            );
+            FROM dbo.VehicleModels AS vm
+            WHERE vm.ModelName = @Model
+            AND vm.IsActive = 1;
+
             """;
 
         await using SqlConnection connection =
@@ -346,7 +351,11 @@ public class VehicleRepository : IVehicleRepository
         await using SqlDataReader reader =
             await command.ExecuteReaderAsync();
 
-        await reader.ReadAsync();
+        if (!await reader.ReadAsync())
+        {
+            throw new BusinessRuleException(
+                "Vehicle model does not exist or is inactive.");
+        }
 
         return MapVehicle(reader);
     }
@@ -354,12 +363,18 @@ public class VehicleRepository : IVehicleRepository
     public async Task<bool> UpdateAsync(Vehicle vehicle)
     {
         const string sql = """
-            UPDATE dbo.Vehicles
+            UPDATE v
             SET
-                PlateNumber = @PlateNumber,
-                Model = @Model,
-                Status = @Status
-            WHERE Id = @Id;
+                v.PlateNumber = @PlateNumber,
+                v.Model = vm.ModelName,
+                v.VehicleModelId = vm.Id,
+                v.Status = @Status
+            FROM dbo.Vehicles AS v
+            INNER JOIN dbo.VehicleModels AS vm
+                ON vm.ModelName = @Model
+            AND vm.IsActive = 1
+            WHERE v.Id = @Id;
+
             """;
 
         await using SqlConnection connection =
