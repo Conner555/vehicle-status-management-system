@@ -49,6 +49,23 @@ const currentRole = ref(
 
 const vehicles = ref([])
 
+// ======================================================
+// Search block
+// ======================================================
+
+const searchKeyword = ref('')
+const selectedStatus = ref('')
+
+// ======================================================
+// obset page
+// ======================================================
+
+const currentPage = ref(1)
+const pageSize = ref(2)
+const totalCount = ref(0)
+const totalPages = ref(0)
+
+
 const plateNumber = ref('')
 const model = ref('')
 const status = ref('')
@@ -58,6 +75,7 @@ const editingId = ref(null)
 const dialogVisible = ref(false)
 
 const loading = ref(false)
+
 
 
 // ======================================================
@@ -82,51 +100,84 @@ function logout() {
 // GET Vehicles
 // ======================================================
 
-async function loadVehicles() {
 
+async function loadVehicles() {
   loading.value = true
 
   try {
+    const response = await api.get('/vehicles/paged', {
+      params: {
+        keyword: searchKeyword.value.trim(),
+        status: selectedStatus.value,
+        page: currentPage.value,
+        pageSize: pageSize.value
+      }
+    })
 
-    const response =
-      await api.get('/vehicles')
+    vehicles.value = response.data.items
+    totalCount.value = response.data.totalCount
+    totalPages.value = response.data.totalPages
 
-    vehicles.value =
-      response.data
-
+    console.log('Pagination:', response.data)
   }
   catch (error) {
+    console.error('Load vehicles error:', error)
 
-    const statusCode =
-      error.response?.status
-
-    console.error(
-      'Load vehicles error:',
-      statusCode,
-      error.response?.data
-    )
-
-    if (statusCode === 401) {
-
-      ElMessage.error(
-        'Login expired. Please login again.'
-      )
-
+    if (error.response?.status === 401) {
+      ElMessage.error('Login expired. Please login again.')
       logout()
     }
     else {
-
-      ElMessage.error(
-        'Failed to load vehicles.'
-      )
+      ElMessage.error('Failed to load vehicles.')
     }
-
   }
   finally {
-
     loading.value = false
   }
 }
+
+// ======================================================
+// SearchKeywowrd//offset page//check detail
+// ======================================================
+
+async function searchVehicles() {
+  currentPage.value = 1
+
+  await loadVehicles()
+}
+
+async function resetSearch() {
+  searchKeyword.value = ''
+  selectedStatus.value = ''
+  currentPage.value = 1
+
+  await loadVehicles()
+}
+
+
+async function handleCurrentChange(newPage) {
+  currentPage.value = newPage
+
+  await loadVehicles()
+}
+
+async function handleSizeChange(newSize) {
+  pageSize.value = newSize
+
+  currentPage.value = 1
+
+  await loadVehicles()
+}
+
+
+//vhicleDetail的具体内容
+function viewVehicleDetail(id) {
+  console.log('Parent received ID:', id)
+
+  router.push(`/vehicles/${id}`)
+}
+
+
 
 
 // ======================================================
@@ -320,14 +371,16 @@ async function deleteVehicle(id) {
       }
     )
 
-
     await api.delete(
       `/vehicles/${id}`
     )
 
+    if (currentPage.value > Math.max(1, totalPages.value)) {
+      currentPage.value = Math.max(1, totalPages.value)
 
-    await loadVehicles()
+      await loadVehicles()
 
+    }
 
     ElMessage.success(
       'Vehicle deleted successfully.'
@@ -439,10 +492,11 @@ function handleVehicleError(
 // Initial Load
 // ======================================================
 
+
 onMounted(() => {
+  console.log('VehicleView mounted')
 
   loadVehicles()
-
 })
 
 </script>
@@ -471,7 +525,8 @@ onMounted(() => {
 
 
       <el-menu
-        default-active="vehicles"
+        router
+        :default-active="$route.path"
         class="side-menu"
       >
 
@@ -615,6 +670,69 @@ onMounted(() => {
             Add Vehicle
           </el-button>
 
+
+        <!-- ============================================= -->
+        <!-- Search Keyword -->
+        <!-- ============================================= -->
+
+        
+        <div class="search-area">
+
+          <el-input
+            v-model="searchKeyword"
+            placeholder="Search plate number or model"
+            clearable
+            style="width: 260px"
+            @keyup.enter="searchVehicles"
+          />
+
+          <el-button
+            type="primary"
+            @click="searchVehicles"
+          >
+            Search
+          </el-button>
+
+          <el-button @click="resetSearch">
+            Reset
+          </el-button>
+
+
+          <el-select
+            v-model="selectedStatus"
+            placeholder="Select status"
+            style="width: 160px"
+          >
+            <el-option
+              label="All Status"
+              value=""
+            />
+
+            <el-option
+              label="Active"
+              value="Active"
+            />
+
+            <el-option
+              label="Inactive"
+              value="Inactive"
+            />
+          </el-select>
+        </div>
+
+        <div class="pagination-area">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total="totalCount"
+            :page-sizes="[2, 5, 10, 20]"
+            layout="total, sizes, prev, pager, next"
+            background
+            @current-change="handleCurrentChange"
+            @size-change="handleSizeChange"
+          />
+        </div>
+
         </div>
 
 
@@ -634,6 +752,18 @@ onMounted(() => {
 
           :current-role="
             currentRole
+          "
+
+          :current-page="
+            currentPage
+          "
+
+          :page-size="
+            pageSize
+          "
+
+          @detail="
+          viewVehicleDetail
           "
 
           @edit="
@@ -689,3 +819,13 @@ onMounted(() => {
   </el-container>
 
 </template>
+
+
+<style scoped>
+.pagination-area {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding: 12px 0;
+}
+</style>

@@ -14,11 +14,22 @@ defineProps({
   currentRole: {
     type: String,
     default: ''
+  },
+  currentPage: {
+    type: Number,
+    default: 1
+  },
+
+  pageSize: {
+    type: Number,
+    default: 10
   }
+
 })
 
 
 const emit = defineEmits([
+  'detail',
   'edit',
   'delete'
 ])
@@ -36,11 +47,19 @@ const emit = defineEmits([
       style="width: 100%"
     >
 
+
       <el-table-column
-        prop="id"
-        label="ID"
+        label="No."
         width="80"
-      />
+      >
+        <template #default="scope">
+          {{
+            (currentPage - 1) * pageSize
+            + scope.$index + 1
+          }}
+        </template>
+      </el-table-column>
+
 
 
       <el-table-column
@@ -85,6 +104,17 @@ const emit = defineEmits([
       >
 
         <template #default="scope">
+
+          <el-button
+            type="primary"
+            link
+            @click="
+              console.log('Details clicked:', scope.row.id);
+              emit('detail', scope.row.id)
+            "
+          >
+            Details
+          </el-button>
 
           <el-button
             v-if="

@@ -9,7 +9,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
-
+using VehicleStatusSystem.BackgroundServices;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +50,66 @@ builder.Services.AddScoped<
     ITokenService,
     JwtTokenService>();
 
+builder.Services.AddScoped<
+    IDashboardRepository,
+    DashboardRepository>();
+
+builder.Services.AddScoped<
+    IDashboardService,
+    DashboardService>();
+
+builder.Services.AddScoped<
+    IRentalOrderRepository,
+    RentalOrderRepository>();
+
+builder.Services.AddScoped<
+    IRentalOrderService,
+    RentalOrderService>();
+
+
+builder.Services.AddHostedService<
+    OrderExpirationBackgroundService>();
+
+builder.Services.AddScoped<
+    IPaymentRepository,
+    PaymentRepository>();
+
+builder.Services.AddScoped<
+    IPaymentService,
+    PaymentService>();
+
+builder.Services.AddScoped<
+    IHandoverRepository,
+    HandoverRepository>();
+
+builder.Services.AddScoped<
+    IHandoverService,
+    HandoverService>();
+
+builder.Services.AddScoped<
+    IReturnRepository,
+    ReturnRepository>();
+
+builder.Services.AddScoped<
+    IReturnService,
+    ReturnService>();
+
+builder.Services.AddScoped<
+    IInspectionRepository,
+    InspectionRepository>();
+
+builder.Services.AddScoped<
+    IInspectionService,
+    InspectionService>();
+
+
+builder.Services.AddScoped<
+    IMaintenanceRepository,
+    MaintenanceRepository>();
+
+builder.Services.AddScoped<
+    IMaintenanceService,
+    MaintenanceService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

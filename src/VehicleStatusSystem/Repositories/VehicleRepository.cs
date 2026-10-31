@@ -1,12 +1,43 @@
 using Microsoft.Data.SqlClient;
 using VehicleStatusSystem.Interfaces;
 using VehicleStatusSystem.Models;
+using VehicleStatusSystem.Exceptions;
 
 namespace VehicleStatusSystem.Repositories;
 
 public class VehicleRepository : IVehicleRepository
 {
     private readonly string _connectionString;
+
+
+    private static void AddFilterParameters(
+        SqlCommand command,
+        string? normalizedKeyword,
+        string? normalizedStatus,
+        string? escapedKeyword)
+    {
+        command.Parameters.Add(
+            "@Keyword",
+            System.Data.SqlDbType.NVarChar,
+            100
+        ).Value = (object?)normalizedKeyword
+                ?? DBNull.Value;
+
+        command.Parameters.Add(
+            "@Status",
+            System.Data.SqlDbType.NVarChar,
+            20
+        ).Value = (object?)normalizedStatus
+                ?? DBNull.Value;
+
+        command.Parameters.Add(
+            "@Pattern",
+            System.Data.SqlDbType.NVarChar,
+            202
+        ).Value = escapedKeyword is null
+            ? DBNull.Value
+            : $"%{escapedKeyword}%";
+    }
 
     public VehicleRepository(IConfiguration configuration)
     {
@@ -16,7 +47,10 @@ public class VehicleRepository : IVehicleRepository
                 "Database connection string was not found.");
     }
 
-    public async Task<List<Vehicle>> GetAllAsync()
+
+    public async Task<List<Vehicle>> GetAllAsync(
+        string? keyword = null,
+        string? status = null )
     {
         List<Vehicle> vehicles = new();
 
@@ -28,6 +62,16 @@ public class VehicleRepository : IVehicleRepository
                 Status,
                 CreateTime
             FROM dbo.Vehicles
+            WHERE (
+                @Keyword IS NULL
+                OR PlateNumber LIKE @Pattern
+                OR Model LIKE @Pattern
+            )
+            AND
+            (
+                @Status IS NULL
+                OR Status = @Status
+            )
             ORDER BY Id;
             """;
 
@@ -39,6 +83,45 @@ public class VehicleRepository : IVehicleRepository
         await using SqlCommand command =
             new(sql, connection);
 
+        string? normalizedKeyword =
+            string.IsNullOrWhiteSpace(keyword)
+                ? null
+                : keyword.Trim();
+
+        string? normalizedStatus =
+            string.IsNullOrWhiteSpace(status)
+                ? null
+                : status.Trim();
+
+        command.Parameters.Add(
+            "@Keyword",
+            System.Data.SqlDbType.NVarChar,
+            100
+        ).Value = (object?)normalizedKeyword
+                ?? DBNull.Value;
+
+        command.Parameters.Add(
+            "@Status",
+            System.Data.SqlDbType.NVarChar,
+            20
+        ).Value = (object?)normalizedStatus
+                    ?? DBNull.Value;
+
+    
+        // 对用户输入中的 SQL LIKE 特殊字符转义
+        string? escapedKeyword = normalizedKeyword?
+            .Replace("[", "[[]")
+            .Replace("%", "[%]")
+            .Replace("_", "[_]");
+
+        command.Parameters.Add(
+            "@Pattern",
+            System.Data.SqlDbType.NVarChar,
+            202
+        ).Value = escapedKeyword is null
+            ? DBNull.Value
+            : $"%{escapedKeyword}%";
+
         await using SqlDataReader reader =
             await command.ExecuteReaderAsync();
 
@@ -49,6 +132,140 @@ public class VehicleRepository : IVehicleRepository
 
         return vehicles;
     }
+
+
+    public async Task<(List<Vehicle> Items, int TotalCount)>
+        GetPagedAsync(
+            string? keyword,
+            string? status,
+            int page,
+            int pageSize)
+    {
+        // 1. 初始化当前页车辆列表
+        List<Vehicle> vehicles = new();
+
+        // 2. 处理搜索条件
+        string? normalizedKeyword =
+            string.IsNullOrWhiteSpace(keyword)
+                ? null
+                : keyword.Trim();
+
+        string? normalizedStatus =
+            string.IsNullOrWhiteSpace(status)
+                ? null
+                : status.Trim();
+
+        // 3. 转义 LIKE 特殊字符
+        string? escapedKeyword = normalizedKeyword?
+            .Replace("[", "[[]")
+            .Replace("%", "[%]")
+            .Replace("_", "[_]");
+
+        // 4. 计算需要跳过的记录数
+        int offset = checked((page - 1) * pageSize);
+
+        // 5. 分页 SQL
+        const string dataSql = """
+            SELECT
+                Id,
+                PlateNumber,
+                Model,
+                Status,
+                CreateTime
+            FROM dbo.Vehicles
+            WHERE
+                (
+                    @Keyword IS NULL
+                    OR PlateNumber LIKE @Pattern
+                    OR Model LIKE @Pattern
+                )
+                AND
+                (
+                    @Status IS NULL
+                    OR Status = @Status
+                )
+            ORDER BY Id
+            OFFSET @Offset ROWS
+            FETCH NEXT @PageSize ROWS ONLY;
+            """;
+
+        // 6. 查询总数 SQL
+        const string countSql = """
+            SELECT COUNT(*)
+            FROM dbo.Vehicles
+            WHERE
+                (
+                    @Keyword IS NULL
+                    OR PlateNumber LIKE @Pattern
+                    OR Model LIKE @Pattern
+                )
+                AND
+                (
+                    @Status IS NULL
+                    OR Status = @Status
+                );
+            """;
+
+        // 7. 创建数据库连接
+        await using SqlConnection connection =
+            new(_connectionString);
+
+        await connection.OpenAsync();
+
+        // 8. 执行分页查询
+        await using (SqlCommand command =
+            new(dataSql, connection))
+        {
+            AddFilterParameters(
+                command,
+                normalizedKeyword,
+                normalizedStatus,
+                escapedKeyword
+            );
+
+            command.Parameters.Add(
+                "@Offset",
+                System.Data.SqlDbType.Int
+            ).Value = offset;
+
+            command.Parameters.Add(
+                "@PageSize",
+                System.Data.SqlDbType.Int
+            ).Value = pageSize;
+
+            await using SqlDataReader reader =
+                await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                vehicles.Add(MapVehicle(reader));
+            }
+        }
+
+        // 9. 执行总数查询
+        int totalCount;
+
+        await using (SqlCommand command =
+            new(countSql, connection))
+        {
+            AddFilterParameters(
+                command,
+                normalizedKeyword,
+                normalizedStatus,
+                escapedKeyword
+            );
+
+            object? result =
+                await command.ExecuteScalarAsync();
+
+            totalCount = Convert.ToInt32(result);
+        }
+
+        // 10. 返回元组
+        return (vehicles, totalCount);
+    }
+
+
 
     public async Task<Vehicle?> GetByIdAsync(int id)
     {
@@ -91,6 +308,7 @@ public class VehicleRepository : IVehicleRepository
             (
                 PlateNumber,
                 Model,
+                VehicleModelId,
                 Status
             )
             OUTPUT
@@ -99,12 +317,15 @@ public class VehicleRepository : IVehicleRepository
                 INSERTED.Model,
                 INSERTED.Status,
                 INSERTED.CreateTime
-            VALUES
-            (
+            SELECT
                 @PlateNumber,
-                @Model,
+                vm.ModelName,
+                vm.Id,
                 @Status
-            );
+            FROM dbo.VehicleModels AS vm
+            WHERE vm.ModelName = @Model
+            AND vm.IsActive = 1;
+
             """;
 
         await using SqlConnection connection =
@@ -130,7 +351,11 @@ public class VehicleRepository : IVehicleRepository
         await using SqlDataReader reader =
             await command.ExecuteReaderAsync();
 
-        await reader.ReadAsync();
+        if (!await reader.ReadAsync())
+        {
+            throw new BusinessRuleException(
+                "Vehicle model does not exist or is inactive.");
+        }
 
         return MapVehicle(reader);
     }
@@ -138,12 +363,18 @@ public class VehicleRepository : IVehicleRepository
     public async Task<bool> UpdateAsync(Vehicle vehicle)
     {
         const string sql = """
-            UPDATE dbo.Vehicles
+            UPDATE v
             SET
-                PlateNumber = @PlateNumber,
-                Model = @Model,
-                Status = @Status
-            WHERE Id = @Id;
+                v.PlateNumber = @PlateNumber,
+                v.Model = vm.ModelName,
+                v.VehicleModelId = vm.Id,
+                v.Status = @Status
+            FROM dbo.Vehicles AS v
+            INNER JOIN dbo.VehicleModels AS vm
+                ON vm.ModelName = @Model
+            AND vm.IsActive = 1
+            WHERE v.Id = @Id;
+
             """;
 
         await using SqlConnection connection =

@@ -1,5 +1,7 @@
 using VehicleStatusSystem.Exceptions;
 
+using System.ComponentModel.DataAnnotations;
+
 namespace VehicleStatusSystem.Exceptions;
 
 public class GlobalExceptionMiddleware
@@ -57,6 +59,22 @@ public class GlobalExceptionMiddleware
                 StatusCodes.Status401Unauthorized,
                 ex.Message);
         }
+
+    
+        catch (ValidationException ex)
+        {
+            _logger.LogWarning(
+                "Request validation failed: {Message}",
+                ex.Message);
+
+            await WriteErrorAsync(
+                context,
+                StatusCodes.Status400BadRequest,
+                ex.Message);
+        }
+
+
+
 
         catch (Exception ex)
         {

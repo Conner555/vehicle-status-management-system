@@ -4,7 +4,13 @@ namespace VehicleStatusSystem.Interfaces;
 
 public interface IVehicleRepository
 {
-    Task<List<Vehicle>> GetAllAsync();
+    Task<List<Vehicle>> GetAllAsync(string? keyword = null, string? status = null);
+
+    Task<(List<Vehicle> Items, int TotalCount)> GetPagedAsync(
+        string? keyword,
+        string? status,
+        int page,
+        int pageSize);
 
     Task<Vehicle?> GetByIdAsync(int id);
 

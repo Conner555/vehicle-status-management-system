@@ -2,7 +2,7 @@
 
 A full-stack vehicle status management system built with **ASP.NET Core Web API**, **SQL Server**, and **Vue 3**.
 
-The project follows a layered **Controller - Service - Repository** backend architecture and a component-based Vue frontend. It includes vehicle CRUD operations, vehicle status history, JWT authentication, role-based authorization, validation, centralized exception handling, service-layer unit tests, and a browser-based management interface.
+The project follows a layered **Controller - Service - Repository** backend architecture and a component-based Vue frontend. Version 2 adds keyword search, status filtering, server-side pagination, vehicle detail pages, historical status charts, and a database-driven dashboard. It also includes JWT authentication, role-based authorization, DTO validation, centralized exception handling, and service-layer unit tests.
 
 ---
 
@@ -13,6 +13,10 @@ The project follows a layered **Controller - Service - Repository** backend arch
 - Role-based authorization for **User** and **Admin**
 - Vehicle CRUD with backend business-rule validation
 - Vehicle status history with one-to-many database relationships
+- Keyword search and vehicle-status filtering
+- SQL Server pagination with total counts and configurable page size
+- Vehicle details, status-history table, and ECharts trend visualizations
+- Database-driven dashboard with vehicle counts and status distribution
 - Vue component separation with **Props / Emits**
 - Centralized Axios instance with JWT request interceptor
 - Vue Router with authentication navigation guard
@@ -33,6 +37,10 @@ The project follows a layered **Controller - Service - Repository** backend arch
 - Prevent duplicate plate numbers
 - Prevent deletion of vehicles with historical status records
 - Reload frontend data from the backend after successful write operations
+- Search by partial plate number or model (`keyword`)
+- Filter by vehicle status (`status`)
+- Use `GET /api/vehicles/paged` for server-side pagination (page, pageSize, totalCount)
+- View a vehicle detail page at `/vehicles/:id`
 
 ### Vehicle Status Management
 
@@ -40,6 +48,15 @@ The project follows a layered **Controller - Service - Repository** backend arch
 - Query vehicle status history
 - Record temperature, speed, battery level, and timestamp
 - Maintain a one-to-many relationship between vehicles and status records
+- Allow Admin users to add new status records while authenticated users can view history
+- Display temperature, speed, and battery trends with ECharts
+
+### Dashboard
+
+- Show total vehicles, Active vehicles, Inactive vehicles, and total status records
+- Display Active / Inactive distribution using an ECharts doughnut chart
+- Refresh summary values from `GET /api/dashboard/summary`
+- The dashboard represents database snapshots, not live telemetry
 
 ### Authentication & Authorization
 
@@ -58,6 +75,8 @@ Permission model:
 | --- | :---: | :---: |
 | View vehicles | ✓ | ✓ |
 | View vehicle status | ✓ | ✓ |
+| View dashboard | ✓ | ✓ |
+| Add vehicle status record | ✗ | ✓ |
 | Create vehicle | ✗ | ✓ |
 | Update vehicle | ✗ | ✓ |
 | Delete vehicle | ✗ | ✓ |
@@ -85,7 +104,7 @@ Permission model:
 
 ## Frontend
 
-The frontend is built with **Vue 3**, **Vite**, **Axios**, **Vue Router**, and **Element Plus**.
+The frontend is built with **Vue 3**, **Vite**, **Axios**, **Vue Router**, **Element Plus**, and **ECharts**.
 
 ### Login Page
 
@@ -118,6 +137,8 @@ Current routes:
 ```text
 /login
 /vehicles
+/vehicles/:id
+/dashboard
 ```
 
 The Vue Router navigation guard redirects unauthenticated users to `/login`.
@@ -129,11 +150,14 @@ src/
 ├── components/
 │   ├── LoginForm.vue
 │   ├── VehicleTable.vue
-│   └── VehicleDialog.vue
+│   ├── VehicleDialog.vue
+│   └── VehicleStatusChart.vue
 │
 ├── views/
 │   ├── LoginView.vue
-│   └── VehicleView.vue
+│   ├── VehicleView.vue
+│   ├── VehicleDetailView.vue
+│   └── DashboardView.vue
 │
 ├── router/
 │   └── index.js
@@ -158,12 +182,15 @@ The frontend uses:
 
 Current UI includes:
 
-1. **Login Page** - centered Element Plus login card
-2. **Vehicle Management Page** - sidebar, header, current user/role, vehicle table, and admin actions
-3. **Add / Edit Vehicle Dialog** - reusable form dialog for POST and PUT
-4. **Delete Confirmation** - Element Plus confirmation flow before DELETE
+1. **Login Page** - Element Plus login card
+2. **Vehicle Management Page** - CRUD, search, status filtering, and pagination
+3. **Vehicle Detail Page** - details, historical records, and status trend chart
+4. **Dashboard Page** - statistics and status distribution
+5. **Add / Edit Vehicle Dialog** and delete confirmation
 
-## Frontend Preview
+Existing screenshots below cover the original login and vehicle management flows. Updated V2 screenshots can be added under `docs/images/`.
+
+### Screenshots
 
 ### Login Page
 
@@ -201,6 +228,7 @@ Current UI includes:
 - **Axios**
 - **Vue Router**
 - **Element Plus**
+- **ECharts**
 - **localStorage**
 - **JWT Bearer Token**
 
@@ -414,7 +442,8 @@ POST /api/auth/login
 ### Vehicles
 
 ```http
-GET    /api/vehicles
+GET    /api/vehicles?keyword=BYD&status=Active
+GET    /api/vehicles/paged?keyword=BYD&status=Active&page=1&pageSize=10
 GET    /api/vehicles/{id}
 POST   /api/vehicles
 PUT    /api/vehicles/{id}
@@ -427,6 +456,14 @@ DELETE /api/vehicles/{id}
 GET  /api/vehicles/{vehicleId}/status
 POST /api/vehicles/{vehicleId}/status
 ```
+
+### Dashboard
+
+```http
+GET /api/dashboard/summary
+```
+
+The summary returns `totalVehicles`, `activeVehicles`, `inactiveVehicles`, and `totalRecords`.
 
 Protected endpoints use:
 
@@ -560,6 +597,10 @@ Do not commit database passwords, JWT secret keys, or valid JWT tokens.
 
 ## How to Run
 
+> Use a supported .NET 10 SDK, SQL Server, and a compatible Node.js version (see `frontend/vehicle-status-frontend/package.json` for the Node.js engine range).
+>
+> The frontend source imports `echarts`. Before a reproducible fresh install is possible, ensure `echarts` is declared in `package.json` and commit a generated `package-lock.json`. See **Dependency Maintenance** below.
+
 ### 1. Clone
 
 ```bash
@@ -567,7 +608,16 @@ git clone https://github.com/Conner555/vehicle-status-management-system.git
 cd vehicle-status-management-system
 ```
 
-### 2. Configure and run the backend
+### 2. Initialize SQL Server and configure the backend
+
+Execute these scripts in SQL Server, in order:
+
+```text
+database/init.sql
+database/seed_demo.sql  (optional fictional demo records)
+```
+
+Then configure `ConnectionStrings:DefaultConnection` and `Jwt:SecretKey` using .NET User Secrets or environment variables. The SQL scripts do not create a demo Admin account; set up an authorized administrator separately without committing passwords or credentials.
 
 ```bash
 cd src/VehicleStatusSystem
@@ -576,7 +626,6 @@ dotnet build
 dotnet run
 ```
 
-Configure SQL Server and the JWT secret before starting the backend.
 
 The development API currently uses a local address such as:
 
@@ -598,7 +647,7 @@ Open another terminal:
 
 ```bash
 cd frontend/vehicle-status-frontend
-npm install
+npm ci  # after package-lock.json has been committed; otherwise npm install
 npm run dev
 ```
 
@@ -619,6 +668,18 @@ frontend/vehicle-status-frontend/src/services/api.js
 For local development, make sure the backend CORS policy allows the frontend origin.
 
 ---
+
+## Dependency Maintenance
+
+From `frontend/vehicle-status-frontend`:
+
+```bash
+npm ls echarts vue vue-router
+npm install echarts --save
+npm run build
+```
+
+Check the installed Vue and Vue Router versions for compatibility before changing the existing `rc` version ranges or overrides. Commit both `package.json` and `package-lock.json` after generating a lockfile from a working installation. Do **not** commit `node_modules/` or Vite `dist/` output. For subsequent clean installations, use `npm ci`.
 
 ## Current Status
 
@@ -645,14 +706,20 @@ Implemented:
 - [x] Axios instance + JWT interceptor
 - [x] Vue Router
 - [x] Authentication navigation guard
+- [x] Keyword search and vehicle status filtering
+- [x] Server-side vehicle pagination
+- [x] Vehicle detail pages and status-history chart
+- [x] Dashboard summary API and ECharts visualization
+- [x] Demo database seed script
 
 Planned improvements:
 
 - [ ] Integration tests
 - [ ] Docker
 - [ ] CI/CD with GitHub Actions
-- [ ] Pagination / search / filtering
-- [ ] Expanded business modules such as rental orders and reviews
+- [ ] Document V2 UI with updated screenshots
+- [ ] Improve reproducible frontend dependency installation
+- [ ] Optional business modules such as rental orders and reviews
 
 ---
 

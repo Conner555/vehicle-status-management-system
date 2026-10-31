@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using VehicleStatusSystem.DTOs;
 using VehicleStatusSystem.Interfaces;
 
@@ -6,6 +7,7 @@ namespace VehicleStatusSystem.Controllers;
 
 [ApiController]
 [Route("api/vehicles/{vehicleId:int}/status")]
+[Authorize]
 public class VehicleStatusController : ControllerBase
 {
     private readonly IVehicleStatusService _statusService;
@@ -28,6 +30,7 @@ public class VehicleStatusController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<VehicleStatusDto>>
         Create(
             int vehicleId,
