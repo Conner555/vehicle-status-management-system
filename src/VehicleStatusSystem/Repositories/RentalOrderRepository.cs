@@ -83,7 +83,8 @@ public class RentalOrderRepository : IRentalOrderRepository
                     CustomerId,
                     TotalAmount,
                     Status,
-                    ExpiresAt
+                    ExpiresAt,
+                    RefundPolicyVersion
                 )
                 OUTPUT INSERTED.Id
                 VALUES
@@ -91,7 +92,8 @@ public class RentalOrderRepository : IRentalOrderRepository
                     @CustomerId,
                     @TotalAmount,
                     'PendingPayment',
-                    DATEADD(MINUTE, 15, SYSUTCDATETIME())
+                    DATEADD(MINUTE, 15, SYSUTCDATETIME()),
+                    '2'
                 );
                 """;
 
@@ -774,12 +776,19 @@ public class RentalOrderRepository : IRentalOrderRepository
     {
         // 锁定车辆行，锁保持至事务结束
         const string vehicleSql = """
-            SELECT Status
-            FROM dbo.Vehicles WITH (UPDLOCK, HOLDLOCK)
-            WHERE Id = @VehicleId;
+            SELECT
+                v.Status,
+                v.OperationStatus,
+                vm.IsActive
+            FROM dbo.Vehicles AS v WITH (UPDLOCK, HOLDLOCK)
+            LEFT JOIN dbo.VehicleModels AS vm
+                ON vm.Id = v.VehicleModelId
+            WHERE v.Id = @VehicleId;
             """;
 
-        string? status;
+        string? status = null;
+        string? operationStatus = null;
+        bool modelIsActive = false;
 
         await using (var command =
             new SqlCommand(vehicleSql, connection, transaction))
@@ -788,13 +797,29 @@ public class RentalOrderRepository : IRentalOrderRepository
                 "@VehicleId", SqlDbType.Int).Value =
                 line.VehicleId;
 
-            status = (string?)await command
-                .ExecuteScalarAsync();
+            await using var reader =
+                await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                status = reader.GetString(0);
+
+                operationStatus = reader.IsDBNull(1)
+                    ? null
+                    : reader.GetString(1);
+
+                modelIsActive = !reader.IsDBNull(2)
+                    && reader.GetBoolean(2);
+            }
         }
 
-        if (status != "Active")
+        if (status != "Active" ||
+            operationStatus != "Available" ||
+            !modelIsActive)
+        {
             throw new BusinessRuleException(
                 $"Vehicle {line.VehicleId} is unavailable.");
+        }
 
         // 判断是否与已有有效订单重叠
         const string conflictSql = """

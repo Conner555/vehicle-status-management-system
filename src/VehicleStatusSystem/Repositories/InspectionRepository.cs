@@ -3,6 +3,7 @@ using System.Data;
 using Microsoft.Data.SqlClient;
 using VehicleStatusSystem.DTOs;
 using VehicleStatusSystem.Interfaces;
+using VehicleStatusSystem.Domain;
 
 namespace VehicleStatusSystem.Repositories;
 
@@ -391,8 +392,238 @@ public class InspectionRepository : IInspectionRepository
         }
     }
 
+    private static async Task CreateEarlyReturnRefundAsync(
+        SqlConnection connection,
+        SqlTransaction transaction,
+        int orderId,
+        int itemId)
+    {
+        // 1. 检查退款规则版本
+        const string policySql = """
+            SELECT RefundPolicyVersion
+            FROM dbo.RentalOrders
+            WHERE Id = @OrderId;
+            """;
 
+        int policyVersion;
 
+        await using (var cmd = new SqlCommand(
+            policySql, connection, transaction))
+        {
+            cmd.Parameters.Add(
+                "@OrderId", SqlDbType.Int).Value = orderId;
+
+            object? value = await cmd.ExecuteScalarAsync();
+
+            if (value is null)
+                throw new InvalidOperationException(
+                    "Rental order not found.");
+
+            policyVersion = Convert.ToInt32(value);
+        }
+
+        // 历史订单不自动补发退款
+        if (policyVersion != 2)
+            return;
+
+        // 2. 读取结算依据
+        const string itemSql = """
+            SELECT
+                RentalDays,
+                DailyRate,
+                Subtotal,
+                ActualHandedOverAt,
+                ActualReturnedAt
+            FROM dbo.RentalOrderItems
+            WHERE Id = @ItemId
+            AND OrderId = @OrderId
+            AND Status = 'Completed';
+            """;
+
+        int bookedDays;
+        decimal dailyRate;
+        decimal subtotal;
+        DateTime handoverAt;
+        DateTime returnedAt;
+
+        await using (var cmd = new SqlCommand(
+            itemSql, connection, transaction))
+        {
+            cmd.Parameters.Add(
+                "@ItemId", SqlDbType.Int).Value = itemId;
+            cmd.Parameters.Add(
+                "@OrderId", SqlDbType.Int).Value = orderId;
+
+            await using var reader =
+                await cmd.ExecuteReaderAsync();
+
+            if (!await reader.ReadAsync())
+                throw new InvalidOperationException(
+                    "Completed rental item not found.");
+
+            bookedDays = reader.GetInt32(0);
+            dailyRate = reader.GetDecimal(1);
+            subtotal = reader.GetDecimal(2);
+
+            if (reader.IsDBNull(3) || reader.IsDBNull(4))
+                throw new InvalidOperationException(
+                    "Actual rental timestamps are missing.");
+
+            handoverAt = reader.GetDateTime(3);
+            returnedAt = reader.GetDateTime(4);
+        }
+
+        // 3. 调用现有 Domain 计算器
+        var settlement = RentalSettlementCalculator.Calculate(
+            handoverAt,
+            returnedAt,
+            bookedDays,
+            dailyRate);
+
+        if (settlement.OriginalAmount != subtotal)
+            throw new InvalidOperationException(
+                "Rental amount is inconsistent.");
+
+        decimal refundAmount = settlement.RefundAmount;
+
+        // 4. 无差额时，无需插入退款记录
+        if (refundAmount == 0m)
+            return;
+
+        // 5. 检查是否已有提前归还退款
+        const string existingSql = """
+            SELECT Status
+            FROM dbo.Refunds WITH (UPDLOCK, HOLDLOCK)
+            WHERE OrderItemId = @ItemId
+            AND Reason = 'EarlyReturn';
+            """;
+
+        await using (var cmd = new SqlCommand(
+            existingSql, connection, transaction))
+        {
+            cmd.Parameters.Add(
+                "@ItemId", SqlDbType.Int).Value = itemId;
+
+            object? existing = await cmd.ExecuteScalarAsync();
+
+            if (existing is not null)
+                throw new InvalidOperationException(
+                    "Early return refund already exists.");
+        }
+
+        // 6. 查找成功支付记录
+        const string paymentSql = """
+            SELECT
+                Id,
+                Amount
+            FROM dbo.Payments WITH (UPDLOCK, HOLDLOCK)
+            WHERE OrderId = @OrderId
+            AND Status = 'Succeeded';
+            """;
+
+        long paymentId;
+        decimal paidAmount;
+
+        await using (var cmd = new SqlCommand(
+            paymentSql, connection, transaction))
+        {
+            cmd.Parameters.Add(
+                "@OrderId", SqlDbType.Int).Value = orderId;
+
+            await using var reader =
+                await cmd.ExecuteReaderAsync();
+
+            if (!await reader.ReadAsync())
+                throw new InvalidOperationException(
+                    "Successful payment not found.");
+
+            paymentId = reader.GetInt64(0);
+            paidAmount = reader.GetDecimal(1);
+
+            if (await reader.ReadAsync())
+                throw new InvalidOperationException(
+                    "Multiple successful payments found.");
+        }
+
+        // 7. 检查已成功退款总额
+        const string refundedSql = """
+            SELECT COALESCE(SUM(Amount), 0)
+            FROM dbo.Refunds WITH (UPDLOCK, HOLDLOCK)
+            WHERE PaymentId = @PaymentId
+            AND Status = 'Succeeded';
+            """;
+
+        decimal refundedAmount;
+
+        await using (var cmd = new SqlCommand(
+            refundedSql, connection, transaction))
+        {
+            cmd.Parameters.Add(
+                "@PaymentId", SqlDbType.BigInt).Value = paymentId;
+
+            refundedAmount = Convert.ToDecimal(
+                await cmd.ExecuteScalarAsync());
+        }
+
+        if (refundAmount + refundedAmount > paidAmount)
+            throw new InvalidOperationException(
+                "Refund exceeds the original payment.");
+
+        // 8. 写入模拟成功退款
+        const string insertSql = """
+            INSERT INTO dbo.Refunds
+            (
+                OrderId,
+                OrderItemId,
+                PaymentId,
+                IdempotencyKey,
+                Amount,
+                Reason,
+                Status,
+                RefundedAt
+            )
+            VALUES
+            (
+                @OrderId,
+                @ItemId,
+                @PaymentId,
+                @IdempotencyKey,
+                @Amount,
+                'EarlyReturn',
+                'Succeeded',
+                SYSUTCDATETIME()
+            );
+            """;
+
+        await using (var cmd = new SqlCommand(
+            insertSql, connection, transaction))
+        {
+            cmd.Parameters.Add(
+                "@OrderId", SqlDbType.Int).Value = orderId;
+
+            cmd.Parameters.Add(
+                "@ItemId", SqlDbType.Int).Value = itemId;
+
+            cmd.Parameters.Add(
+                "@PaymentId", SqlDbType.BigInt).Value = paymentId;
+
+            // 内部自动结算生成唯一标识
+            cmd.Parameters.Add(
+                "@IdempotencyKey",
+                SqlDbType.UniqueIdentifier).Value = Guid.NewGuid();
+
+            var amountParam = cmd.Parameters.Add(
+                "@Amount", SqlDbType.Decimal);
+
+            amountParam.Precision = 18;
+            amountParam.Scale = 2;
+            amountParam.Value = refundAmount;
+
+            if (await cmd.ExecuteNonQueryAsync() != 1)
+                throw new InvalidOperationException(
+                    "Early return refund insert failed.");
+        }
+    }
 
     public async Task<InspectionCompleteResult> CompleteAsync(
         int inspectionId,
@@ -700,6 +931,16 @@ public class InspectionRepository : IInspectionRepository
                     throw new InvalidOperationException(
                         "Maintenance task creation failed.");
                 }
+            }
+
+            // V3.4.3：验车通过后自动执行提前归还差额退款
+            if (result == "Passed")
+            {
+                await CreateEarlyReturnRefundAsync(
+                    connection,
+                    transaction,
+                    orderId,
+                    itemId);
             }
 
 

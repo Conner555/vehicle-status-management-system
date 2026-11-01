@@ -8,6 +8,7 @@ using VehicleStatusSystem.Models;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using VehicleStatusSystem.Domain;
 
 using VehicleStatusSystem.BackgroundServices;
 
@@ -110,6 +111,46 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IMaintenanceService,
     MaintenanceService>();
+
+builder.Services.AddScoped<
+    IAdminRentalOrderRepository,
+    AdminRentalOrderRepository>();
+
+builder.Services.AddScoped<
+    IAdminRentalOrderService,
+    AdminRentalOrderService>();
+
+builder.Services.AddScoped<
+    IAdminRentalOrderDetailRepository,
+    AdminRentalOrderDetailRepository>();
+
+builder.Services.AddScoped<
+    IAdminRentalOrderDetailService,
+    AdminRentalOrderDetailService>();
+
+builder.Services.AddScoped<
+    IRefundRepository,
+    RefundRepository>();
+
+builder.Services.AddScoped<
+    IRefundService,
+    RefundService>();
+
+builder.Services.AddScoped<
+    IEarlyReturnSettlementRepository,
+    EarlyReturnSettlementRepository>();
+
+builder.Services.AddScoped<
+    IEarlyReturnSettlementService,
+    EarlyReturnSettlementService>();
+
+builder.Services.AddScoped<
+    IVehicleAvailabilityRepository,
+    VehicleAvailabilityRepository>();
+
+builder.Services.AddScoped<
+    IVehicleAvailabilityService,
+    VehicleAvailabilityService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
