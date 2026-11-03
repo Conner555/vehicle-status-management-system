@@ -3,6 +3,7 @@ using System.Data;
 using Microsoft.Data.SqlClient;
 using VehicleStatusSystem.Interfaces;
 using VehicleStatusSystem.Models;
+using VehicleStatusSystem.Domain;
 
 namespace VehicleStatusSystem.Repositories;
 
@@ -167,27 +168,35 @@ public class ReturnRepository : IReturnRepository
                 return ReturnVehicleResult.InvalidItemStatus;
             }
 
+            DateTime returnedAtUtc = DateTime.UtcNow;
+
+            var schedule = InspectionScheduleCalculator.Generate(
+                returnedAtUtc);
+
             // 6. 更新归还状态和实际归还时间
             const string updateSql = """
                 UPDATE dbo.RentalOrderItems
                 SET Status = 'PendingInspection',
-                    ActualReturnedAt = SYSUTCDATETIME(),
-                    UpdatedAt = SYSUTCDATETIME()
+                    ActualReturnedAt = @ReturnedAt,
+                    UpdatedAt = @ReturnedAt
                 WHERE Id = @ItemId
-                  AND OrderId = @OrderId
-                  AND Status = 'InUse'
-                  AND ActualReturnedAt IS NULL;
+                AND OrderId = @OrderId
+                AND Status = 'InUse'
+                AND ActualReturnedAt IS NULL;
                 """;
 
             await using (var cmd =
-                new SqlCommand(
-                    updateSql, connection, transaction))
+                new SqlCommand(updateSql, connection, transaction))
             {
                 cmd.Parameters.Add(
                     "@ItemId", SqlDbType.Int).Value = orderItemId;
 
                 cmd.Parameters.Add(
                     "@OrderId", SqlDbType.Int).Value = orderId;
+
+                cmd.Parameters.Add(
+                    "@ReturnedAt", SqlDbType.DateTime2).Value =
+                    returnedAtUtc;
 
                 if (await cmd.ExecuteNonQueryAsync() != 1)
                 {
@@ -196,31 +205,18 @@ public class ReturnRepository : IReturnRepository
                 }
             }
 
-
-            // 7. 创建模拟验车任务
-            // 与车辆归还更新使用同一事务
+            // 7. 创建验车任务
+            // 计划时间随机生成，硬截止为归还后 12 小时
+            // 与车辆归还操作处于同一事务
             const string insertInspectionSql = """
-                DECLARE @ReturnedAt DATETIME2(0);
-
-                SELECT @ReturnedAt = ActualReturnedAt
-                FROM dbo.RentalOrderItems
-                WHERE Id = @ItemId
-                AND OrderId = @OrderId
-                AND VehicleId = @VehicleId
-                AND Status = 'PendingInspection';
-
-                IF @ReturnedAt IS NULL
-                    THROW 50011, 'Return timestamp not found.', 1;
-
-                DECLARE @RandomMinutes INT =
-                    (CHECKSUM(NEWID()) & 2147483647) % 721;
-
                 INSERT INTO dbo.VehicleInspections
                 (
                     RentalOrderItemId,
                     VehicleId,
                     ReturnedAt,
                     InspectionDueAt,
+                    ScheduledInspectionAt,
+                    InspectionDeadlineAt,
                     Status
                 )
                 VALUES
@@ -228,7 +224,9 @@ public class ReturnRepository : IReturnRepository
                     @ItemId,
                     @VehicleId,
                     @ReturnedAt,
-                    DATEADD(MINUTE, @RandomMinutes, @ReturnedAt),
+                    @ScheduledInspectionAt,
+                    @ScheduledInspectionAt,
+                    @InspectionDeadlineAt,
                     'Pending'
                 );
                 """;
@@ -243,12 +241,24 @@ public class ReturnRepository : IReturnRepository
                     "@ItemId", SqlDbType.Int).Value = orderItemId;
 
                 cmd.Parameters.Add(
-                    "@OrderId", SqlDbType.Int).Value = orderId;
-
-                cmd.Parameters.Add(
                     "@VehicleId", SqlDbType.Int).Value = vehicleId;
 
-                int affectedRows = await cmd.ExecuteNonQueryAsync();
+                cmd.Parameters.Add(
+                    "@ReturnedAt", SqlDbType.DateTime2).Value =
+                    returnedAtUtc;
+
+                cmd.Parameters.Add(
+                    "@ScheduledInspectionAt",
+                    SqlDbType.DateTime2).Value =
+                    schedule.ScheduledAt;
+
+                cmd.Parameters.Add(
+                    "@InspectionDeadlineAt",
+                    SqlDbType.DateTime2).Value =
+                    schedule.DeadlineAt;
+
+                int affectedRows =
+                    await cmd.ExecuteNonQueryAsync();
 
                 if (affectedRows != 1)
                 {

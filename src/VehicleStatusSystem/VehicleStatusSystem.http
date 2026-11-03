@@ -1,16 +1,24 @@
 @VehicleStatusSystem_HostAddress = http://localhost:5129
-@userToken = YOUR_USER_TOKEN
-
-@adminToken = YOUR_ADMIN_TOKEN
 
 
-@UserToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoidXNlcjAxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiVXNlciIsImV4cCI6MTc5MzUxNzU0OSwiaXNzIjoiVmVoaWNsZVN0YXR1c1N5c3RlbSIsImF1ZCI6IlZlaGljbGVTdGF0dXNDbGllbnQifQ.9746V7LjfMjfEQ7AmiugzgqCY6Q21D9tZe9mlFwym18
-
-@OperatorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjMiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoib3BlcmF0b3JfdGVzdCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6Ik9wZXJhdG9yIiwiZXhwIjoxNzkzNTE3NTYyLCJpc3MiOiJWZWhpY2xlU3RhdHVzU3lzdGVtIiwiYXVkIjoiVmVoaWNsZVN0YXR1c0NsaWVudCJ9.VKEldmjspxaQ5U-65Uo0WC8PW4AE6MDw_Eo97wo_KX8
+@UserToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoidXNlcjAxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiVXNlciIsImV4cCI6MTc5MzY3NzMxMiwiaXNzIjoiVmVoaWNsZVN0YXR1c1N5c3RlbSIsImF1ZCI6IlZlaGljbGVTdGF0dXNDbGllbnQifQ.hw3gCX3Hvef1a8M-tCiTQ8cCslPktvfeaST75rbMoIU
 
 
 
-@AdminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4wMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiZXhwIjoxNzkzNTE3NTc2LCJpc3MiOiJWZWhpY2xlU3RhdHVzU3lzdGVtIiwiYXVkIjoiVmVoaWNsZVN0YXR1c0NsaWVudCJ9.bFjvLfg8RrH2Mmn_-usyRVuuaa5zDOjUSOQn8O8e_mg
+@Operator1Token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjMiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoib3BlcmF0b3JfdGVzdCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6Ik9wZXJhdG9yIiwiZXhwIjoxNzkzNjc5NzM0LCJpc3MiOiJWZWhpY2xlU3RhdHVzU3lzdGVtIiwiYXVkIjoiVmVoaWNsZVN0YXR1c0NsaWVudCJ9.-1I1rRSbDthmZF_b300xmlB4-S6qlTXKGA3hONz0rBc
+
+
+
+@Operator2Token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjQiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoib3BlcmF0b3IwMiIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6Ik9wZXJhdG9yIiwiZXhwIjoxNzkzNjc5NzE0LCJpc3MiOiJWZWhpY2xlU3RhdHVzU3lzdGVtIiwiYXVkIjoiVmVoaWNsZVN0YXR1c0NsaWVudCJ9.hgRcuZu1jXyxeiIn2ESH3pS7QQPXFq5my2XCruR0mCo
+
+
+
+
+
+@AdminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4wMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiZXhwIjoxNzkzNjgwMTA5LCJpc3MiOiJWZWhpY2xlU3RhdHVzU3lzdGVtIiwiYXVkIjoiVmVoaWNsZVN0YXR1c0NsaWVudCJ9.ZnhOxpbB8zRfiRwwFGj9Aqkc6ypYGyWr7FEYhV4q8mk
+
+
+
 
 
 # =============eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoidXNlcjAxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiVXNlciIsImV4cCI6MTc5Mjc2OTQ1MCwiaXNzIjoiVmVoaWNsZVN0YXR1c1N5c3RlbSIsImF1ZCI6IlZlaGljbGVTdGF0dXNDbGllbnQifQ.3Z1IWuXkZiI4SmAYztMS6RkX0CW9kafVlPFmJoQB400===========
@@ -47,10 +55,21 @@ POST Status
 
 
 
+
 ###
 GET http://localhost:5129/api/vehicles?keyword=Tesla
 Authorization: Bearer {{token}}
 
+
+
+###
+POST http://localhost:5129/api/auth/login
+Content-Type: application/json
+
+{
+    "username": "operator02",
+    "password": "12345678"
+}
 
 
 ###
@@ -92,14 +111,14 @@ Content-Type: application/json
 {
   "items": [
     {
-      "vehicleId": 1050,
-      "startAt": "2026-11-01T06:34:58.8476490Z",
-      "endAt": "2026-11-04T06:34:58.8476490Z"
+      "vehicleId": 1054,
+      "startAt": "2026-11-03T02:51:05.8599502Z",
+      "endAt": "2026-11-05T02:51:05.8599502Z"
     },
     {
-      "vehicleId": 1051,
-      "startAt": "2026-11-01T06:34:58.8476490Z",
-      "endAt": "2026-11-05T06:34:58.8476490Z"
+      "vehicleId": 1055,
+      "startAt": "2026-11-03T02:51:05.8599502Z",
+      "endAt": "2026-11-05T02:51:05.8599502Z"
     }
   ]
 }
@@ -107,10 +126,10 @@ Content-Type: application/json
 
 
 ### V3.3.8 支付多车订单
-POST http://localhost:5129/api/rental-orders/21/pay
+POST http://localhost:5129/api/rental-orders/23/pay
 Authorization: Bearer {{UserToken}}
 Content-Type: application/json
-Idempotency-Key: 0e1f2a3b-4c5d-4e6f-9a7b-8c9d0e1f2a3b
+Idempotency-Key: 7e1f3a3b-4c5d-4e6f-9a7b-8c9d0e1f3a3b
 
 {
   "method": "MockWallet"
@@ -120,26 +139,26 @@ Idempotency-Key: 0e1f2a3b-4c5d-4e6f-9a7b-8c9d0e1f2a3b
 
 
 ### Operator 交付车辆
-POST http://localhost:5129/api/rental-orders/21/items/31/handover
-Authorization: Bearer {{OperatorToken}}
+POST http://localhost:5129/api/rental-orders/23/items/36/handover
+Authorization: Bearer {{Operator2Token}}
 
 
 
 
 ### User 归还车辆
-POST http://localhost:5129/api/rental-orders/21/items/31/return
+POST http://localhost:5129/api/rental-orders/23/items/36/return
 Authorization: Bearer {{UserToken}}
 
 
 ### Operator 领取车辆的验车任务
-POST http://localhost:5129/api/inspections/8/claim
-Authorization: Bearer {{OperatorToken}}
+POST http://localhost:5129/api/inspections/11/claim
+Authorization: Bearer {{Operator2Token}}
 
 
 
 ### Operator 提交车辆验车通过
-POST http://localhost:5129/api/inspections/8/complete
-Authorization: Bearer {{OperatorToken}}
+POST http://localhost:5129/api/inspections/11/complete
+Authorization: Bearer {{Operator2Token}}
 Content-Type: application/json
 
 {
@@ -214,3 +233,159 @@ Authorization: Bearer {{UserToken}}
 ### 1. 查询全部可预订车辆
 GET http://localhost:5129/api/vehicles/availability?startAt=2026-11-05T08:00:00Z&endAt=2026-11-08T08:00:00Z&page=1&pageSize=10
 
+
+
+
+### 1. Admin 查询全部超时事件
+GET http://localhost:5129/api/admin/inspection-timeouts?page=1&pageSize=10
+Authorization: Bearer {{AdminToken}}
+
+###
+
+### 2. 查询 Open 事件
+GET http://localhost:5129/api/admin/inspection-timeouts?status=Open&page=1&pageSize=10
+Authorization: Bearer {{AdminToken}}
+
+###
+
+### 3. 查询 Resolved 事件
+GET http://localhost:5129/api/admin/inspection-timeouts?status=Resolved&page=1&pageSize=10
+Authorization: Bearer {{AdminToken}}
+
+###
+
+### 4. 非法分页
+GET http://localhost:5129/api/admin/inspection-timeouts?page=0
+Authorization: Bearer {{AdminToken}}
+
+###
+
+### 5. 不存在的事件
+GET http://localhost:5129/api/admin/inspection-timeouts/99999
+Authorization: Bearer {{AdminToken}}
+
+###
+
+### 6. User 越权
+GET http://localhost:5129/api/admin/inspection-timeouts
+Authorization: Bearer {{UserToken}}
+
+###
+
+### 7. 未登录
+GET http://localhost:5129/api/admin/inspection-timeouts
+
+
+
+
+
+### 1. Operator 查看待处理提醒
+GET http://localhost:5129/api/operator/inspection-reminders?status=Open&page=1&pageSize=10
+Authorization: Bearer {{OperatorToken}}
+
+###
+
+### 2. Operator 查询已解决提醒
+GET http://localhost:5129/api/operator/inspection-reminders?status=Resolved&page=1&pageSize=10
+Authorization: Bearer {{OperatorToken}}
+
+###
+
+### 3. Operator 查询已升级提醒
+GET http://localhost:5129/api/operator/inspection-reminders?status=Escalated&page=1&pageSize=10
+Authorization: Bearer {{OperatorToken}}
+
+###
+
+### 4. Admin 查询全部提醒
+GET http://localhost:5129/api/operator/inspection-reminders?page=1&pageSize=10
+Authorization: Bearer {{AdminToken}}
+
+###
+
+### 5. Operator 查询单条提醒
+GET http://localhost:5129/api/operator/inspection-reminders/1
+Authorization: Bearer {{OperatorToken}}
+
+###
+
+### 6. 非法分页
+GET http://localhost:5129/api/operator/inspection-reminders?page=0
+Authorization: Bearer {{OperatorToken}}
+
+###
+
+### 7. 普通 User 越权访问
+GET http://localhost:5129/api/operator/inspection-reminders
+Authorization: Bearer {{UserToken}}
+
+###
+
+### 8. 未登录访问
+GET http://localhost:5129/api/operator/inspection-reminders
+
+
+
+
+@baseUrl = http://localhost:5129
+
+# 替换为 SQL 查询得到的三个真实 ReminderId
+@reminderA = 1
+@reminderB = 2
+@reminderPublic = 3
+
+### 1. Operator A 查询自己的历史提醒
+GET {{baseUrl}}/api/operator/inspection-reminders/1
+Authorization: Bearer {{Operator1Token}}
+
+###
+
+### 2. Operator B 越权查询 A 的提醒
+GET {{baseUrl}}/api/operator/inspection-reminders/{{reminderA}}
+Authorization: Bearer {{OperatorBToken}}
+
+###
+
+### 3. Operator B 查询自己的提醒
+GET {{baseUrl}}/api/operator/inspection-reminders/{{reminderB}}
+Authorization: Bearer {{Operator2Token}}
+###
+
+### 4. Operator A 越权查询 B 的提醒
+GET {{baseUrl}}/api/operator/inspection-reminders/{{reminderA}}
+Authorization: Bearer {{Operator2Token}}
+
+###
+
+### 5. Admin 查询 A 的提醒
+GET {{baseUrl}}/api/operator/inspection-reminders/{{reminderA}}
+Authorization: Bearer {{AdminToken}}
+
+###
+
+### 6. Admin 查询 B 的提醒
+GET {{baseUrl}}/api/operator/inspection-reminders/{{reminderB}}
+Authorization: Bearer {{AdminToken}}
+
+###
+
+### 7. Operator A 查看公共 Open 提醒
+GET {{baseUrl}}/api/operator/inspection-reminders/{{reminderPublic}}
+Authorization: Bearer {{OperatorAToken}}
+
+###
+
+### 8. Operator B 查看公共 Open 提醒
+GET {{baseUrl}}/api/operator/inspection-reminders/{{reminderPublic}}
+Authorization: Bearer {{OperatorBToken}}
+
+###
+
+### 9. 普通 User 越权
+GET {{baseUrl}}/api/operator/inspection-reminders/{{reminderA}}
+Authorization: Bearer {{UserToken}}
+
+###
+
+### 10. 未登录访问
+GET {{baseUrl}}/api/operator/inspection-reminders/{{reminderA}}

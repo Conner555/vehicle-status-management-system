@@ -152,6 +152,39 @@ builder.Services.AddScoped<
     IVehicleAvailabilityService,
     VehicleAvailabilityService>();
 
+builder.Services.AddScoped<
+    IInspectionTimeoutRepository,
+    InspectionTimeoutRepository>();
+
+builder.Services.AddHostedService<
+    InspectionTimeoutBackgroundService>();
+
+builder.Services.AddScoped<
+    IAdminInspectionTimeoutRepository,
+    AdminInspectionTimeoutRepository>();
+
+builder.Services.AddScoped<
+    IAdminInspectionTimeoutService,
+    AdminInspectionTimeoutService>();
+
+builder.Services.AddScoped<
+    IInspectionReminderRepository,
+    InspectionReminderRepository>();
+
+builder.Services.AddScoped<
+    IOperatorInspectionReminderRepository,
+    OperatorInspectionReminderRepository>();
+
+builder.Services.AddScoped<
+    IOperatorInspectionReminderService,
+    OperatorInspectionReminderService>();
+
+builder.Services.AddScoped<
+    IRefundRetryRepository,
+    RefundRetryRepository>();
+
+
+
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
