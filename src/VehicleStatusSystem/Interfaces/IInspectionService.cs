@@ -23,4 +23,15 @@ public interface IInspectionService
         string result,
         string? resultNotes);
 
+    Task<MyInspectionPageDto> GetMineAsync(
+        int operatorId,
+        int page,
+        int pageSize);
+
+    Task<InspectionHistoryPageDto> GetHistoryAsync(
+        int operatorId,
+        string? result,
+        int page,
+        int pageSize);
+
 }

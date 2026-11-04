@@ -72,9 +72,9 @@ public sealed class OperatorInspectionReminderRepository
                   @IsAdmin = 1
                   OR vi.OperatorId = @OperatorId
                   OR (
-                      e.Status = N'Open'
-                      AND vi.Status = 'Pending'
+                      vi.Status = 'Pending'
                       AND vi.OperatorId IS NULL
+                      AND e.Status IN (N'Open', N'Escalated')
                   )
               )
             ORDER BY e.DetectedAt DESC, e.Id DESC
@@ -142,9 +142,9 @@ public sealed class OperatorInspectionReminderRepository
                   @IsAdmin = 1
                   OR vi.OperatorId = @OperatorId
                   OR (
-                      e.Status = N'Open'
-                      AND vi.Status = 'Pending'
-                      AND vi.OperatorId IS NULL
+                      vi.Status = 'Pending'
+                      AND vi.OperatorId is NULL
+                      AND e.Status IN (N'Open', N'Escalated')
                   )
               );
             """;

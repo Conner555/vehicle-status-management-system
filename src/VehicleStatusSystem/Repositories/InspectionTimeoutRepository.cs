@@ -83,8 +83,7 @@ public sealed class InspectionTimeoutRepository
                 FROM dbo.VehicleInspections vi
                 WHERE vi.Status IN ('Pending', 'InProgress')
                 AND vi.ReturnedAt IS NOT NULL
-                AND vi.ReturnedAt <
-                    DATEADD(HOUR, -12, SYSUTCDATETIME())
+                AND vi.InspectionDeadlineAt <= SYSUTCDATETIME()
 
                 AND NOT EXISTS
                 (
@@ -170,7 +169,4 @@ public sealed class InspectionTimeoutRepository
             throw;
         }
     }
-
-
-
 }

@@ -18,6 +18,93 @@ public class InspectionService : IInspectionService
         _logger = logger;
     }
 
+    public async Task<MyInspectionPageDto> GetMineAsync(
+        int operatorId,
+        int page,
+        int pageSize)
+    {
+        if (operatorId <= 0)
+        {
+            throw new ValidationException(
+                "Invalid operator id.");
+        }
+
+        if (page < 1 || pageSize < 1 || pageSize > 100)
+        {
+            throw new ValidationException(
+                "Invalid pagination parameters.");
+        }
+
+        long offset = ((long)page - 1) * pageSize;
+
+        if (offset > int.MaxValue)
+        {
+            throw new ValidationException(
+                "Pagination offset is too large.");
+        }
+
+        return await _repository.GetMineAsync(
+            operatorId,
+            page,
+            pageSize);
+    }
+
+    public async Task<InspectionHistoryPageDto> GetHistoryAsync(
+        int operatorId,
+        string? result,
+        int page,
+        int pageSize)
+    {
+        if (operatorId <= 0)
+        {
+            throw new ValidationException(
+                "Invalid operator id.");
+        }
+
+        if (page < 1 || pageSize < 1 || pageSize > 100)
+        {
+            throw new ValidationException(
+                "Invalid pagination parameters.");
+        }
+
+        long offset = ((long)page - 1) * pageSize;
+
+        if (offset > int.MaxValue)
+        {
+            throw new ValidationException(
+                "Pagination offset is too large.");
+        }
+
+        // 规范化筛选参数
+        string? normalizedResult =
+            string.IsNullOrWhiteSpace(result)
+                ? null
+                : result.Trim();
+
+        if (normalizedResult is not null &&
+            normalizedResult != "Passed" &&
+            normalizedResult != "Failed")
+        {
+            throw new ValidationException(
+                "Result must be Passed or Failed.");
+        }
+
+        var history = await _repository.GetHistoryAsync(
+            operatorId,
+            normalizedResult,
+            page,
+            pageSize);
+
+        _logger.LogInformation(
+            "Inspection history queried. OperatorId={OperatorId}, Result={Result}, TotalCount={TotalCount}",
+            operatorId,
+            normalizedResult,
+            history.TotalCount);
+
+        return history;
+    }
+
+
     public async Task<PendingInspectionPageDto> GetPendingAsync(
         bool? isDue,
         int page,

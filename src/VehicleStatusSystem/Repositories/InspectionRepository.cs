@@ -19,6 +19,109 @@ public class InspectionRepository : IInspectionRepository
                 "Database connection string is missing.");
     }
 
+
+    //operator查看历史验车订单
+    public async Task<MyInspectionPageDto> GetMineAsync(
+        int operatorId,
+        int page,
+        int pageSize)
+    {
+        int offset = checked((page - 1) * pageSize);
+
+        const string sql = """
+            SELECT COUNT(*)
+            FROM dbo.VehicleInspections
+            WHERE OperatorId = @OperatorId
+            AND Status = 'InProgress';
+
+            SELECT
+                vi.Id AS InspectionId,
+                i.OrderId,
+                vi.RentalOrderItemId AS OrderItemId,
+                vi.VehicleId,
+                v.PlateNumber,
+                vm.ModelName,
+                vi.Status,
+                vi.ReturnedAt,
+                vi.ScheduledInspectionAt,
+                vi.InspectionDeadlineAt
+            FROM dbo.VehicleInspections vi
+            INNER JOIN dbo.RentalOrderItems i
+                ON i.Id = vi.RentalOrderItemId
+            INNER JOIN dbo.Vehicles v
+                ON v.Id = vi.VehicleId
+            INNER JOIN dbo.VehicleModels vm
+                ON vm.Id = v.VehicleModelId
+            WHERE vi.OperatorId = @OperatorId
+            AND vi.Status = 'InProgress'
+            ORDER BY vi.InspectionDeadlineAt, vi.Id
+            OFFSET @Offset ROWS
+            FETCH NEXT @PageSize ROWS ONLY;
+            """;
+
+        await using var connection =
+            new SqlConnection(_connectionString);
+
+        await connection.OpenAsync();
+
+        await using var command =
+            new SqlCommand(sql, connection);
+
+        command.Parameters.Add(
+            "@OperatorId", SqlDbType.Int).Value = operatorId;
+
+        command.Parameters.Add(
+            "@Offset", SqlDbType.Int).Value = offset;
+
+        command.Parameters.Add(
+            "@PageSize", SqlDbType.Int).Value = pageSize;
+
+        var result = new MyInspectionPageDto
+        {
+            Page = page,
+            PageSize = pageSize
+        };
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        if (await reader.ReadAsync())
+        {
+            result.TotalCount = reader.GetInt32(0);
+        }
+
+        if (!await reader.NextResultAsync())
+        {
+            throw new DataException(
+                "My inspection result set is missing.");
+        }
+
+        while (await reader.ReadAsync())
+        {
+            result.Items.Add(new MyInspectionDto
+            {
+                InspectionId = reader.GetInt32(0),
+                OrderId = reader.GetInt32(1),
+                OrderItemId = reader.GetInt32(2),
+                VehicleId = reader.GetInt32(3),
+                PlateNumber = reader.GetString(4),
+                ModelName = reader.GetString(5),
+                Status = reader.GetString(6),
+                ReturnedAt = reader.GetDateTime(7),
+
+                ScheduledInspectionAt = reader.IsDBNull(8)
+                    ? null
+                    : reader.GetDateTime(8),
+
+                InspectionDeadlineAt = reader.GetDateTime(9)
+            });
+        }
+
+        return result;
+    }
+
+
+    //获得待验证车辆
     public async Task<PendingInspectionPageDto> GetPendingAsync(
         bool? isDue,
         int page,
@@ -154,6 +257,136 @@ public class InspectionRepository : IInspectionRepository
         }
 
         return result;
+    }
+
+    public async Task<InspectionHistoryPageDto> GetHistoryAsync(
+        int operatorId,
+        string? result,
+        int page,
+        int pageSize)
+    {
+        int offset = checked((page - 1) * pageSize);
+
+        const string sql = """
+            -- 结果集1：历史记录数量
+            SELECT COUNT(*)
+            FROM dbo.VehicleInspections vi
+            WHERE vi.OperatorId = @OperatorId
+            AND vi.Status IN ('Passed', 'Failed')
+            AND (
+                @Result IS NULL
+                OR vi.Status = @Result
+            );
+
+            -- 结果集2：历史记录分页
+            SELECT
+                vi.Id AS InspectionId,
+                i.OrderId,
+                vi.RentalOrderItemId AS OrderItemId,
+                vi.VehicleId,
+                v.PlateNumber,
+                vm.ModelName,
+                vi.Status,
+                vi.ReturnedAt,
+                vi.ScheduledInspectionAt,
+                vi.InspectionDeadlineAt,
+                vi.InspectedAt,
+                vi.ResultNotes
+            FROM dbo.VehicleInspections vi
+            INNER JOIN dbo.RentalOrderItems i
+                ON i.Id = vi.RentalOrderItemId
+            INNER JOIN dbo.Vehicles v
+                ON v.Id = vi.VehicleId
+            INNER JOIN dbo.VehicleModels vm
+                ON vm.Id = v.VehicleModelId
+            WHERE vi.OperatorId = @OperatorId
+            AND vi.Status IN ('Passed', 'Failed')
+            AND (
+                @Result IS NULL
+                OR vi.Status = @Result
+            )
+            ORDER BY
+                vi.InspectedAt DESC,
+                vi.Id DESC
+            OFFSET @Offset ROWS
+            FETCH NEXT @PageSize ROWS ONLY;
+            """;
+
+        await using var connection =
+            new SqlConnection(_connectionString);
+
+        await connection.OpenAsync();
+
+        await using var command =
+            new SqlCommand(sql, connection);
+
+        command.Parameters.Add(
+            "@OperatorId", SqlDbType.Int).Value = operatorId;
+
+        command.Parameters.Add(
+            "@Result", SqlDbType.NVarChar, 20).Value =
+            result is null ? DBNull.Value : result;
+
+        command.Parameters.Add(
+            "@Offset", SqlDbType.Int).Value = offset;
+
+        command.Parameters.Add(
+            "@PageSize", SqlDbType.Int).Value = pageSize;
+
+        var response = new InspectionHistoryPageDto
+        {
+            Page = page,
+            PageSize = pageSize
+        };
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        // 读取总数
+        if (await reader.ReadAsync())
+        {
+            response.TotalCount = reader.GetInt32(0);
+        }
+
+        // 切换结果集
+        if (!await reader.NextResultAsync())
+        {
+            throw new DataException(
+                "Inspection history result set is missing.");
+        }
+
+        while (await reader.ReadAsync())
+        {
+            response.Items.Add(new InspectionHistoryDto
+            {
+                InspectionId = reader.GetInt32(0),
+                OrderId = reader.GetInt32(1),
+                OrderItemId = reader.GetInt32(2),
+                VehicleId = reader.GetInt32(3),
+
+                PlateNumber = reader.GetString(4),
+                ModelName = reader.GetString(5),
+                Status = reader.GetString(6),
+
+                ReturnedAt = reader.GetDateTime(7),
+
+                ScheduledInspectionAt = reader.IsDBNull(8)
+                    ? null
+                    : reader.GetDateTime(8),
+
+                InspectionDeadlineAt = reader.GetDateTime(9),
+
+                InspectedAt = reader.IsDBNull(10)
+                    ? null
+                    : reader.GetDateTime(10),
+
+                ResultNotes = reader.IsDBNull(11)
+                    ? null
+                    : reader.GetString(11)
+            });
+        }
+
+        return response;
     }
 
     public async Task<InspectionClaimResult> ClaimAsync(

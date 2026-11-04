@@ -1,46 +1,55 @@
+
 import {
   createRouter,
   createWebHistory
 } from 'vue-router'
 
-import LoginView
-  from '../views/LoginView.vue'
+import LoginView from '../views/LoginView.vue'
+import VehicleView from '../views/VehicleView.vue'
+import VehicleDetailView from '../views/VehicleDetailView.vue'
+import DashboardView from '../views/DashboardView.vue'
 
-import VehicleView
-  from '../views/VehicleView.vue'
+import AdminLayout from '../layouts/AdminLayout.vue'
+import AdminOrdersView from '../views/AdminOrdersView.vue'
+import InspectionView from '../views/InspectionView.vue'
 
-import VehicleDetailView
-  from '../views/VehicleDetailView.vue'
+import OperatorLayout from '../layouts/OperatorLayout.vue'
+import OperatorDashboardView from '../views/OperatorDashboardView.vue'
+import component from 'element-plus/es/components/tree-select/src/tree-select-option.mjs'
+import MyInspectionsView from '@/views/MyInspectionsView.vue'
+import InspectionRemindersView from '../views/InspectionRemindersView.vue'
 
-import DashboardView 
-  from '../views/DashboardView.vue'
 
+
+
+function getHomePath(role) {
+  if (role === 'Admin') {
+    return '/admin/dashboard'
+  }
+
+  // User 和 Operator 暂时沿用 V2 页面
+  return '/vehicles'
+}
 
 const routes = [
-
   {
     path: '/',
-    redirect: '/vehicles'
-  },
-
-  {
-    path: '/login',
-    component: LoginView
-  },
-
-  {
-    path: '/vehicles',
-    component: VehicleView,
-
-    meta: {
-      requiresAuth: true
+    redirect: () => {
+      return getHomePath(localStorage.getItem('role'))
     }
   },
 
   {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: DashboardView,
+    path: '/login',
+    name: 'Login',
+    component: LoginView
+  },
+
+  // 保留 V2 原有页面
+  {
+    path: '/vehicles',
+    name: 'Vehicles',
+    component: VehicleView,
     meta: {
       requiresAuth: true
     }
@@ -49,48 +58,145 @@ const routes = [
   {
     path: '/vehicles/:id',
     name: 'VehicleDetail',
-    component:  VehicleDetailView,
-    
-    meta:{
-      requiresAuth :true
+    component: VehicleDetailView,
+    meta: {
+      requiresAuth: true
     }
+  },
+
+  {
+    path: '/dashboard',
+    redirect: '/admin/dashboard'
+  },
+
+  // V3.6 管理后台
+  {
+    path: '/admin',
+    component: AdminLayout,
+    meta: {
+      requiresAuth: true,
+      roles: ['Admin']
+    },
+    children: [
+      {
+        path: '',
+        redirect: '/admin/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'AdminDashboard',
+        component: DashboardView
+      },
+      {
+        path: 'orders',
+        name: 'AdminOrders',
+        component: AdminOrdersView
+      },
+      {
+        path: 'inspections',
+        name: 'AdminInspections',
+        component: InspectionView
+      }
+    ]
+  },
+
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
+  },
+  //OPEARATOR管理者看板
+
+  {
+    path: '/operator',
+    component: OperatorLayout,
+    meta: {
+      requiresAuth: true,
+      roles: ['Operator']
+    },
+    children: [
+      {
+        path: '',
+        redirect: '/operator/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'OperatorDashboard',
+        component: OperatorDashboardView
+      },
+      {
+        path: 'inspections',
+        name: 'OperatorInspections',
+        component: InspectionView
+      },
+      {
+        path: 'my-inspections',
+        name: 'OperatorMyInspections',
+        component: MyInspectionsView
+      },
+      {
+        path: 'reminders',
+        name: 'OperatorReminders',
+        component: InspectionRemindersView
+      }
+    ]
   }
 
 ]
 
-
 const router = createRouter({
-
-  history:
-    createWebHistory(),
-
+  history: createWebHistory(),
   routes
 })
 
-
-// ======================================================
-// Navigation Guard
-// ======================================================
-
-
 router.beforeEach((to) => {
-
   const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role')
 
-  // 未登录，跳转登录页面
+  // 1. 未登录，不能访问受保护页面
   if (to.meta.requiresAuth && !token) {
-    return '/login'
+    return {
+      path: '/login',
+      query: {
+        redirect: to.fullPath
+      }
+    }
   }
 
-  // 已登录，不需要重复进入登录页面
+  // 2. 已登录，不重复进入登录页
   if (to.path === '/login' && token) {
-    return '/vehicles'
+    function getHomePath(role) {
+      if (role === 'Admin') {
+        return '/admin/dashboard'
+      }
+
+      if (role === 'Operator') {
+        return '/operator/dashboard'
+      }
+
+      return '/vehicles'
+    }
   }
 
-  // 允许正常跳转
+  // 3. 检查页面角色权限
+  if (
+    to.meta.roles &&
+    !to.meta.roles.includes(role)
+  ) {
+
+      function getHomePath(role) {
+        if (role === 'Admin') {
+          return '/admin/dashboard'
+        }
+
+        if (role === 'Operator') {
+          return '/operator/dashboard'
+        }
+
+        return '/vehicles'
+      }
+  }
+
   return true
 })
-
-
 
 export default router

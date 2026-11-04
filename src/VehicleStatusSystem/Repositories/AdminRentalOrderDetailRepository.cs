@@ -95,7 +95,27 @@ public class AdminRentalOrderDetailRepository
             FROM dbo.Payments p
             WHERE p.OrderId = @OrderId
             ORDER BY p.CreatedAt DESC, p.Id DESC;
+
+            -- 结果集 4：退款记录
+            SELECT
+                r.Id AS RefundId,
+                r.RefundNo,
+                r.OrderId,
+                r.OrderItemId,
+                r.PaymentId,
+                r.Amount,
+                r.Reason,
+                r.Status,
+                r.CreatedAt,
+                r.RefundedAt
+            FROM dbo.Refunds r
+            WHERE r.OrderId = @OrderId
+            ORDER BY r.CreatedAt DESC, r.Id DESC;
+
             """;
+
+
+
 
         await using var connection =
             new SqlConnection(_connectionString);
@@ -276,6 +296,49 @@ public class AdminRentalOrderDetailRepository
                 CreatedAt = reader.GetDateTime(
                     reader.GetOrdinal("CreatedAt")),
                 PaidAt = NullableDate(reader, "PaidAt")
+            });
+        }
+
+        // ④ 切换到退款记录
+        if (!await reader.NextResultAsync())
+        {
+            throw new DataException(
+                "Refunds result set is missing.");
+        }
+
+        while (await reader.ReadAsync())
+        {
+            order.Refunds.Add(new AdminOrderRefundDto
+            {
+                RefundId = reader.GetInt64(
+                    reader.GetOrdinal("RefundId")),
+
+                RefundNo = reader.GetGuid(
+                    reader.GetOrdinal("RefundNo")).ToString(),
+
+                OrderId = reader.GetInt32(
+                    reader.GetOrdinal("OrderId")),
+
+                OrderItemId = NullableInt(
+                    reader, "OrderItemId"),
+
+                PaymentId = reader.GetInt64(
+                    reader.GetOrdinal("PaymentId")),
+
+                Amount = reader.GetDecimal(
+                    reader.GetOrdinal("Amount")),
+
+                Reason = reader.GetString(
+                    reader.GetOrdinal("Reason")),
+
+                Status = reader.GetString(
+                    reader.GetOrdinal("Status")),
+
+                CreatedAt = reader.GetDateTime(
+                    reader.GetOrdinal("CreatedAt")),
+
+                RefundedAt = NullableDate(
+                    reader, "RefundedAt")
             });
         }
 

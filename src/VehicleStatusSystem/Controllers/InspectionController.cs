@@ -175,4 +175,86 @@ public class InspectionController : ControllerBase
     }
 
 
+    [HttpGet("mine")]
+    public async Task<ActionResult<MyInspectionPageDto>> GetMine(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        string? userIdValue =
+            User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(
+            userIdValue, out int operatorId) || operatorId <= 0)
+        {
+            return Unauthorized();
+        }
+
+        if (page < 1 || pageSize < 1 || pageSize > 100 ||
+            ((long)page - 1) * pageSize > int.MaxValue)
+        {
+            return BadRequest(new
+            {
+                message = "Invalid pagination parameters."
+            });
+        }
+
+        var result = await _inspectionService.GetMineAsync(
+            operatorId,
+            page,
+            pageSize);
+
+        return Ok(result);
+    }
+
+    //查询历史记录
+    [HttpGet("history")]
+    [Authorize(Roles = "Operator")]
+    public async Task<ActionResult<InspectionHistoryPageDto>> GetHistory(
+        [FromQuery] string? result = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        // 从 JWT 获取当前 Operator ID
+        string? userIdValue =
+            User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(
+            userIdValue,
+            out int operatorId) || operatorId <= 0)
+        {
+            return Unauthorized();
+        }
+
+        // 校验分页
+        if (page < 1 ||
+            pageSize < 1 ||
+            pageSize > 100 ||
+            ((long)page - 1) * pageSize > int.MaxValue)
+        {
+            return BadRequest(new
+            {
+                message = "Invalid pagination parameters."
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(result) &&
+            result != "Passed" &&
+            result != "Failed")
+        {
+            return BadRequest(new
+            {
+                message = "Invalid inspection result."
+            });
+        }
+
+        var history = await _inspectionService.GetHistoryAsync(
+            operatorId,
+            result,
+            page,
+            pageSize);
+
+        return Ok(history);
+    }
+
+
 }

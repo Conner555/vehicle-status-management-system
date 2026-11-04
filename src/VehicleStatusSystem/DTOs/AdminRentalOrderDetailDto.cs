@@ -15,6 +15,9 @@ public class AdminRentalOrderDetailDto
 
     public List<AdminOrderItemDetailDto> Items { get; set; } = new();
     public List<AdminOrderPaymentDto> Payments { get; set; } = new();
+
+    public List<AdminOrderRefundDto> Refunds { get; set; } = new();
+
 }
 
 public class AdminOrderItemDetailDto
@@ -79,4 +82,29 @@ public class AdminOrderPaymentDto
 
     public DateTime CreatedAt { get; set; }
     public DateTime? PaidAt { get; set; }
+}
+
+
+
+public class AdminOrderRefundDto
+{
+    public long RefundId { get; set; }
+
+    public string RefundNo { get; set; } = "";
+
+    public int OrderId { get; set; }
+
+    public int? OrderItemId { get; set; }
+
+    public long PaymentId { get; set; }
+
+    public decimal Amount { get; set; }
+
+    public string Reason { get; set; } = "";
+
+    public string Status { get; set; } = "";
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? RefundedAt { get; set; }
 }

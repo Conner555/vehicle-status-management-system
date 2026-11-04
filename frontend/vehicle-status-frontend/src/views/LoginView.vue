@@ -63,8 +63,27 @@ async function login() {
     )
 
 
-    // 登录成功后跳转 Vehicles
-    router.push('/vehicles')
+    const role = response.data.role
+
+    const targetPath =
+      role === 'Admin'
+        ? '/admin/dashboard'
+        : role === 'Operator'
+          ? '/operator/dashboard'
+          : '/vehicles'
+
+    const redirect = router.currentRoute.value.query.redirect
+
+    // 如果登录前访问的是受保护页面，优先尝试返回
+    if (
+      typeof redirect === 'string' &&
+      redirect.startsWith('/') &&
+      !redirect.startsWith('//')
+    ) {
+      targetPath = redirect
+    }
+
+    router.replace(targetPath)
 
   }
   catch (error) {
