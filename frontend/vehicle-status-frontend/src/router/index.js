@@ -23,11 +23,8 @@ import InspectionRemindersView from '../views/InspectionRemindersView.vue'
 
 
 function getHomePath(role) {
-  if (role === 'Admin') {
-    return '/admin/dashboard'
-  }
-
-  // User 和 Operator 暂时沿用 V2 页面
+  if (role === 'Admin') return '/admin/dashboard'
+  if (role === 'Operator') return '/operator/dashboard'
   return '/vehicles'
 }
 
@@ -152,48 +149,22 @@ router.beforeEach((to) => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
 
-  // 1. 未登录，不能访问受保护页面
   if (to.meta.requiresAuth && !token) {
     return {
       path: '/login',
-      query: {
-        redirect: to.fullPath
-      }
+      query: { redirect: to.fullPath }
     }
   }
 
-  // 2. 已登录，不重复进入登录页
-  if (to.path === '/login' && token) {
-    function getHomePath(role) {
-      if (role === 'Admin') {
-        return '/admin/dashboard'
-      }
-
-      if (role === 'Operator') {
-        return '/operator/dashboard'
-      }
-
-      return '/vehicles'
-    }
-  }
-
-  // 3. 检查页面角色权限
   if (
     to.meta.roles &&
     !to.meta.roles.includes(role)
   ) {
+    return getHomePath(role)
+  }
 
-      function getHomePath(role) {
-        if (role === 'Admin') {
-          return '/admin/dashboard'
-        }
-
-        if (role === 'Operator') {
-          return '/operator/dashboard'
-        }
-
-        return '/vehicles'
-      }
+  if (to.path === '/login' && token) {
+    return getHomePath(role)
   }
 
   return true
