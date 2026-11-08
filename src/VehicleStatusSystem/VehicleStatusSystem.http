@@ -20,7 +20,15 @@
 
 
 
-@AdminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4wMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiZXhwIjoxNzkzNjgwMTA5LCJpc3MiOiJWZWhpY2xlU3RhdHVzU3lzdGVtIiwiYXVkIjoiVmVoaWNsZVN0YXR1c0NsaWVudCJ9.ZnhOxpbB8zRfiRwwFGj9Aqkc6ypYGyWr7FEYhV4q8mk
+@AdminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4wMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiZXhwIjoxNzk0MTQ3NTkzLCJpc3MiOiJWZWhpY2xlU3RhdHVzU3lzdGVtIiwiYXVkIjoiVmVoaWNsZVN0YXR1c0NsaWVudCJ9.FHVVxspADOygMGhm33W2RYLN44Ol84lLld2G5-VT858
+
+
+
+
+
+
+
+
 
 
 
@@ -416,3 +424,68 @@ GET {{baseUrl}}/api/operator/inspection-reminders/{{reminderA}}
 ###
 GET http://localhost:5129/api/inspections/history?page=1&pageSize=10
 Authorization: Bearer {{Operator1Token}}
+
+
+###
+GET http://localhost:5129/api/dev/redis-test
+Authorization: Bearer {{AdminToken}}
+
+
+
+
+### V3.7.2 Dashboard Redis 第一次查询
+GET http://localhost:5129/api/dashboard/summary
+Authorization: Bearer {{AdminToken}}
+
+### V3.7.2 Dashboard Redis 第二次查询
+GET http://localhost:5129/api/dashboard/summary
+Authorization: Bearer {{AdminToken}}
+
+
+
+
+
+### Dashboard Redis 单次查询
+GET http://localhost:5129/api/dashboard/summary
+Authorization: Bearer {{AdminToken}}
+
+
+
+
+### V3.7.4.3 测试3：修改车辆状态
+PUT http://localhost:5129/api/vehicles/1053
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "plateNumber": "DEV004",
+  "model": "Toyota Camry",
+  "status": "Inactive"
+}
+
+
+
+### 第一次查询不存在的车辆
+GET http://localhost:5129/api/vehicles/999999
+Authorization: Bearer {{AdminToken}}
+
+### 第二次查询同一个不存在的车辆
+GET http://localhost:5129/api/vehicles/999999
+Authorization: Bearer {{AdminToken}}
+
+### 查询正常存在的车辆
+GET http://localhost:5129/api/vehicles/1053
+Authorization: Bearer {{AdminToken}}
+
+
+###
+GET http://localhost:5129/api/vehicles/999991
+Authorization: Bearer {{AdminToken}}
+
+###
+GET http://localhost:5129/api/vehicles/999992
+Authorization: Bearer {{AdminToken}}
+
+###
+GET http://localhost:5129/api/vehicles/999993
+Authorization: Bearer {{AdminToken}}

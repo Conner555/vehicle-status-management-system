@@ -9,6 +9,8 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using VehicleStatusSystem.Domain;
+using Microsoft.Extensions.Caching.Distributed;
+using VehicleStatusSystem.Caching;
 
 using VehicleStatusSystem.BackgroundServices;
 
@@ -184,6 +186,13 @@ builder.Services.AddScoped<
     RefundRetryRepository>();
 
 
+//Redis
+builder.Services.AddScoped<
+    IDashboardCacheInvalidator,
+    DashboardCacheInvalidator>();
+
+builder.Services.AddSingleton<DashboardCacheGate>();
+builder.Services.AddSingleton<VehicleCacheGate>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -196,6 +205,7 @@ string jwtSecret =
         "JWT secret key is not configured.");
 
 
+//JWT注册
 builder.Services
     .AddAuthentication(
         JwtBearerDefaults.AuthenticationScheme)
@@ -223,6 +233,20 @@ builder.Services
                 ClockSkew = TimeSpan.Zero
             };
     });
+
+//Redis注册
+var redisConnection =
+    builder.Configuration.GetConnectionString("Redis")
+    ?? throw new InvalidOperationException(
+        "Redis connection string is missing.");
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = redisConnection;
+    options.InstanceName = "FleetFlow:";
+});
+
+
 
 builder.Services.AddAuthorization();
 
@@ -261,5 +285,56 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+//测试Redis
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet(
+        "/api/dev/redis-test",
+        async (
+            IDistributedCache cache,
+            CancellationToken cancellationToken) =>
+        {
+            // 每次生成独立测试 Key
+            string key =
+                $"test:connection:{Guid.NewGuid():N}";
+
+            string value =
+                $"FleetFlow Redis OK {DateTime.UtcNow:O}";
+
+            // 写入 Redis，120 秒后过期
+            await cache.SetStringAsync(
+                key,
+                value,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow =
+                        TimeSpan.FromSeconds(120)
+                },
+                cancellationToken);
+
+            // 从 Redis 读取数据
+            string? cachedValue =
+                await cache.GetStringAsync(
+                    key,
+                    cancellationToken);
+
+            // 检验读写是否一致
+            bool success = value == cachedValue;
+
+            return Results.Ok(new
+            {
+                success,
+                key,
+                originalValue = value,
+                cachedValue,
+                ttlSeconds = 120
+            });
+        })
+        .RequireAuthorization(policy =>
+            policy.RequireRole("Admin"));
+}
+//
 
 app.Run();

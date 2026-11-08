@@ -11,12 +11,17 @@ public class VehicleStatusService
     private readonly IVehicleRepository _vehicleRepository;
     private readonly IVehicleStatusRepository _statusRepository;
 
+    private readonly IDashboardCacheInvalidator _cacheInvalidator;
+
+
     public VehicleStatusService(
         IVehicleRepository vehicleRepository,
-        IVehicleStatusRepository statusRepository)
+        IVehicleStatusRepository statusRepository,
+        IDashboardCacheInvalidator cacheInvalidator)
     {
         _vehicleRepository = vehicleRepository;
         _statusRepository = statusRepository;
+        _cacheInvalidator = cacheInvalidator;
     }
 
     public async Task<List<VehicleStatusDto>> GetByVehicleIdAsync(int vehicleId)
@@ -62,6 +67,10 @@ public class VehicleStatusService
 
         VehicleStatusRecord created =
             await _statusRepository.AddAsync(record);
+            
+        //新增记录更新SQL之后删除缓存
+        await _cacheInvalidator.InvalidateAsync();
+
 
         return ToDto(created);
     }
