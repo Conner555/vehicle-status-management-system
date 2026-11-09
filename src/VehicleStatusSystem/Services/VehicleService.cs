@@ -19,13 +19,6 @@ public class VehicleService : IVehicleService
 
     private readonly VehicleCacheGate _vehicleCacheGate;
 
-
-    //解决缓存雪崩，设置随机TTL
-    int ttlSeconds = Random.Shared.Next(15, 31);
-
-
-    
-
     public VehicleService(
         IVehicleRepository vehicleRepository,
         IVehicleStatusRepository statusRepository,
@@ -160,6 +153,8 @@ public class VehicleService : IVehicleService
 
             if (vehicle is not null)
                 return ToDto(vehicle);
+            
+            int ttlSeconds = Random.Shared.Next(15,31);
 
             // 5. 不存在，写入短期负向缓存
             try
@@ -172,6 +167,12 @@ public class VehicleService : IVehicleService
                         AbsoluteExpirationRelativeToNow =
                             TimeSpan.FromSeconds(ttlSeconds)
                     });
+
+                    _logger.LogDebug(
+                        "Vehicle negative cache saved. Id={VehicledId}, TTL={TTL}s",
+                        id,
+                        ttlSeconds);
+
             }
             catch (Exception ex) when (
                 ex is not OperationCanceledException)
@@ -235,11 +236,41 @@ public class VehicleService : IVehicleService
             Status = dto.Status
         };
 
+
         Vehicle created =
             await _vehicleRepository.AddAsync(vehicle);
 
-        //新建车辆修改SQL数据库内容之后删除Redis缓存
+        // 数据库创建成功后，清理该 ID 的负向缓存
+        SemaphoreSlim gate = _vehicleCacheGate.GetLock(created.Id);
+        
+        await gate.WaitAsync();
+
+        try
+        {
+            string negativeCacheKey =
+                CacheKeys.VehicleNotFound(created.Id);
+
+            try
+            {
+                await _cache.RemoveAsync(negativeCacheKey);
+            }
+            catch (Exception ex) when (
+                ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Vehicle negative cache invalidation failed. Id={VehicleId}",
+                    created.Id);
+            }
+        }
+        finally
+        {
+            gate.Release();
+        }
+
+        // 保留原来的 Dashboard 缓存失效
         await _cacheInvalidator.InvalidateAsync();
+
 
         _logger.LogInformation(
             "Vehicle {VehicleId} created successfully.",

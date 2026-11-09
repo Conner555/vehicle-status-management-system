@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using VehicleStatusSystem.Caching;
 using VehicleStatusSystem.DTOs;
@@ -97,11 +98,22 @@ public class DashboardCacheConcurrencyTests
         // 5. 两个 Service 共享同一个 Gate
         var gate = new DashboardCacheGate();
 
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["CacheSettings:DashboardEnabled"] = "true"
+                })
+            .Build();
+
         var dashboardService = new DashboardService(
             repository.Object,
             cache.Object,
             NullLogger<DashboardService>.Instance,
-            gate);
+            gate,
+            configuration);
+
 
         var invalidator = new DashboardCacheInvalidator(
             cache.Object,
